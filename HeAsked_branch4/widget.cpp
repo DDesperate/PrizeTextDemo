@@ -898,6 +898,9 @@ Widget::Widget(QWidget *parent)
             //参数1:父窗口
             //参数2:使新弹出的窗口与上表对齐
             sortTableElementsByCountWgt = new SortTableElementsByCountWgt(pgTbv,tbvAGlobalRect);
+            connect(sortTableElementsByCountWgt, &SortTableElementsByCountWgt::requestDataSync, this, [=]{
+                sortTableElementsByCountWgt->updateData(downTbv->outputData());
+            });
             sortTableElementsByCountWgt->setAttribute(Qt::WA_DeleteOnClose);
             sortTableElementsByCountWgt->show();
         }

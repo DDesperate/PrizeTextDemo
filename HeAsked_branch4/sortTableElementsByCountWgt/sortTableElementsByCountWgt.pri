@@ -1,6 +1,3 @@
-FORMS += \
-    $$PWD/sortTableElementsByCountWgt.ui
-
 HEADERS += \
     $$PWD/sortTableElementsByCountWgt.h
 
