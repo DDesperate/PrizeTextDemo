@@ -1,0 +1,12 @@
+debug/main.o
+debug/dataconverter.o
+debug/selectdatadelegate.o
+debug/sparsedatadelegate.o
+debug/prizetableview.o
+debug/dataprocessdialog.o
+debug/mainwindow.o
+debug/moc_selectdatadelegate.o
+debug/moc_sparsedatadelegate.o
+debug/moc_prizetableview.o
+debug/moc_dataprocessdialog.o
+debug/moc_mainwindow.o
