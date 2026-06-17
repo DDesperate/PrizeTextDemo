@@ -1,0 +1,65 @@
+﻿  Generate moc_predefs.h
+  InsertOneRow_down.cpp
+  animationWidget.cpp
+  checkOut.cpp
+  clear.cpp
+  clearAllDate.cpp
+  clearHighLight.cpp
+  clearModel.cpp
+  count.cpp
+  dbClkDate_down.cpp
+g:\noteanddata\qt_gitee\myanalysisfolder\newanalysis\newanalysis18\uptbv\checkout.cpp(11): warning C4715: “UpTableView::checkDate”: 不是所有的控件路径都返回值
+g:\noteanddata\qt_gitee\myanalysisfolder\newanalysis\newanalysis18\uptbv\checkout.cpp(30): warning C4715: “UpTableView::checkPrizes”: 不是所有的控件路径都返回值
+  dbClkDate_up.cpp
+  delegate_up.cpp
+  delete.cpp
+  deleteOneRow_passive.cpp
+  deleteSelectedRow.cpp
+  deleteVecByDate.cpp
+  downTbv.cpp
+  fileToStrList.cpp
+  flippableStackedWidget.cpp
+  getRandomMap.cpp
+g:\noteanddata\qt_gitee\myanalysisfolder\newanalysis\newanalysis18\flippablestackedwidget\flippablestackedwidget.cpp(82): warning C4100: “value”: 未引用的形参
+  getSamePrize.cpp
+  imageResizableButton.cpp
+  import.cpp
+  importDialog.cpp
+  insertOneRow.cpp
+  listSelectItem.cpp
+  main.cpp
+  modeWidget.cpp
+  numLineEdit.cpp
+g:\noteanddata\qt_gitee\myanalysisfolder\newanalysis\newanalysis18\uptbv\insertonerow.cpp(25): warning C4715: “UpTableView::insertOneRow”: 不是所有的控件路径都返回值
+  prizeTableView.cpp
+  qss.cpp
+  randomClearOneRow.cpp
+  refreshItem.cpp
+  refreshOneRow.cpp
+  refreshOneRowByDate.cpp
+  search.cpp
+  selectDataDelegate.cpp
+  selectItem.cpp
+  selectMode.cpp
+  setUi.cpp
+  strikeItem.cpp
+  strikeSameItem.cpp
+  structSelectedSwitch.cpp
+  structTransform.cpp
+  topbottomwidget.cpp
+  unMarkRow.cpp
+  upTbv.cpp
+  widget.cpp
+  qrc_font.cpp
+  qrc_images.cpp
+  moc_animationWidget.cpp
+  moc_downTbv.cpp
+  moc_flippableStackedWidget.cpp
+  moc_imageResizableButton.cpp
+  moc_importDialog.cpp
+  moc_numLineEdit.cpp
+  moc_prizeTableView.cpp
+  moc_topBottomwidget.cpp
+  moc_upTbv.cpp
+  moc_widget.cpp
+  NewAnalysis18.vcxproj -> G:\NoteAndData\QT_gitee\MyAnalysisFolder\NewAnalysis\NewAnalysis18\release\NewAnalysis18.exe

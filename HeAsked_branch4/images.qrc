@@ -1,0 +1,17 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/down-arrow_32-32.png</file>
+        <file>images/radioBtn-off.png</file>
+        <file>images/radioBtn-on.png</file>
+        <file>images/red-triangle-down.png</file>
+        <file>images/red-triangle-up.png</file>
+        <file>images/up-arrow_32-32.png</file>
+        <file>images/row.png</file>
+        <file>images/txt-file-symbol.png</file>
+        <file>images/menu.png</file>
+        <file>images/grey-triangle-down.png</file>
+        <file>images/grey-triangle-up.png</file>
+        <file>images/black-triangle-up.png</file>
+        <file>images/black-triangle-down.png</file>
+    </qresource>
+</RCC>
