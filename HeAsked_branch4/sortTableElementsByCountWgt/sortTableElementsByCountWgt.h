@@ -8,6 +8,7 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <QStyledItemDelegate>
+#include <QPushButton>
 #include "przTbv/prizeTableView.h"
 #include "downTbv/downStruct.h"
 
@@ -79,12 +80,23 @@ public:
 signals:
     void requestDataSync();
 
+private slots:
+    void onGroupByFreq();
+    void onUngroupFreq();
+
 private:
     void setupUI();
+    void computeBlockMappingAndDividers(const QVector<const SparseRow *> &rows,
+                                        QVector<int> &mapping, QVector<int> &dividers);
 
     SortPrizeTableView *m_tableView;
     SortDataDelegate *m_delegate;
+    QPushButton *btnGroupByFreq;
+    QPushButton *btnUngroupFreq;
     QVector<SparseRow> m_sparseData;
+    bool m_isGroupedByFreq = false;
+    QVector<QVector<int>> m_originalBlockMappings;
+    QVector<QVector<int>> m_blockDividers;
 };
 
 #endif // SORTTABLEELEMENTSBYCOUNTWGT_H

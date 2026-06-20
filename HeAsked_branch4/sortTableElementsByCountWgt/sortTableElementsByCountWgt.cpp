@@ -1,8 +1,10 @@
 #include "sortTableElementsByCountWgt.h"
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QSet>
+#include <algorithm>
 
 // ========== SortPrizeTableView ==========
 
@@ -399,6 +401,14 @@ void SortTableElementsByCountWgt::setupUI()
 {
     QVBoxLayout *layout = new QVBoxLayout(this);
 
+    QHBoxLayout *btnLayout = new QHBoxLayout();
+    btnGroupByFreq = new QPushButton(QStringLiteral("按出现频率分组"), this);
+    btnUngroupFreq = new QPushButton(QStringLiteral("取消按照频率分组"), this);
+    btnLayout->addWidget(btnGroupByFreq);
+    btnLayout->addWidget(btnUngroupFreq);
+    btnLayout->addStretch();
+    layout->addLayout(btnLayout);
+
     m_tableView = new SortPrizeTableView(this);
     m_delegate = new SortDataDelegate();
 
@@ -407,6 +417,9 @@ void SortTableElementsByCountWgt::setupUI()
     m_tableView->setItemDelegate(m_delegate);
 
     layout->addWidget(m_tableView);
+
+    connect(btnGroupByFreq, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onGroupByFreq);
+    connect(btnUngroupFreq, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onUngroupFreq);
 }
 
 void SortTableElementsByCountWgt::updateData(const QVector<slctTbRow>& data)
@@ -448,5 +461,91 @@ void SortTableElementsByCountWgt::updateData(const QVector<slctTbRow>& data)
         m_sparseData.append(row.toSparseRow());
     }
 
+    m_tableView->refreshModel();
+}
+
+void SortTableElementsByCountWgt::computeBlockMappingAndDividers(const QVector<const SparseRow *> &rows,
+                                                                  QVector<int> &mapping, QVector<int> &dividers)
+{
+    mapping.clear();
+    dividers.clear();
+
+    QVector<int> freq(81, 0);
+    for (const SparseRow *sr : rows) {
+        for (int col = 1; col <= 80; ++col) {
+            if (sr->prizes[col].prize != 0)
+                freq[col]++;
+        }
+    }
+
+    QVector<QPair<int, int>> colFreq;
+    for (int col = 1; col <= 80; ++col)
+        colFreq.append(qMakePair(col, freq[col]));
+
+    std::stable_sort(colFreq.begin(), colFreq.end(),
+                     [](const QPair<int, int> &a, const QPair<int, int> &b) {
+                         return a.second < b.second;
+                     });
+
+    for (const auto &p : colFreq)
+        mapping.append(p.first);
+
+    for (int i = 1; i < 80; ++i) {
+        if (colFreq[i].second != colFreq[i - 1].second)
+            dividers.append(i + 1);
+    }
+}
+
+void SortTableElementsByCountWgt::onGroupByFreq()
+{
+    if (m_sparseData.isEmpty()) {
+        QMessageBox::information(this, QStringLiteral("提示"),
+                                 QStringLiteral("暂无数据，请先拉取数据"));
+        return;
+    }
+
+    QVector<QVector<int>> blockMappings;
+    QVector<QVector<int>> blockDividers;
+    QVector<const SparseRow *> blockRows;
+
+    for (int i = 0; i < m_sparseData.size(); ++i) {
+        const SparseRow &sr = m_sparseData[i];
+        if (sr.isSeparator) {
+            if (!blockRows.isEmpty()) {
+                QVector<int> mapping, dividers;
+                computeBlockMappingAndDividers(blockRows, mapping, dividers);
+                blockMappings.append(mapping);
+                blockDividers.append(dividers);
+                blockRows.clear();
+            }
+        } else {
+            blockRows.append(&sr);
+        }
+    }
+    if (!blockRows.isEmpty()) {
+        QVector<int> mapping, dividers;
+        computeBlockMappingAndDividers(blockRows, mapping, dividers);
+        blockMappings.append(mapping);
+        blockDividers.append(dividers);
+    }
+
+    m_originalBlockMappings = blockMappings;
+    m_blockDividers = blockDividers;
+
+    m_delegate->setBlockColumnMappings(blockMappings);
+    m_delegate->setBlockColumnDividers(QVector<QVector<int>>());
+    m_tableView->setBlockColumnDividers(blockDividers);
+    m_tableView->refreshModel();
+
+    m_isGroupedByFreq = true;
+}
+
+void SortTableElementsByCountWgt::onUngroupFreq()
+{
+    m_delegate->setColumnMapping(QVector<int>());
+    m_tableView->setBlockColumnDividers(QVector<QVector<int>>());
+    m_originalBlockMappings.clear();
+    m_blockDividers.clear();
+    m_isGroupedByFreq = false;
     m_tableView->refreshModel();
 }
