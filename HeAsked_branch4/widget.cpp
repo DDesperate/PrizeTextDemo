@@ -296,7 +296,7 @@ Widget::Widget(QWidget *parent)
 
         // 同步downTbv数据到SortTableElementsByCountWgt
         if (sortTableElementsByCountWgt != nullptr) {
-            sortTableElementsByCountWgt->updateData(downTbv->outputData());
+            sortTableElementsByCountWgt->updateData(downTbv->outputRepeatData());
         }
 
     });
@@ -903,7 +903,7 @@ Widget::Widget(QWidget *parent)
             //参数2:使新弹出的窗口与上表对齐
             sortTableElementsByCountWgt = new SortTableElementsByCountWgt(pgTbv,tbvAGlobalRect);
             connect(sortTableElementsByCountWgt, &SortTableElementsByCountWgt::requestDataSync, this, [=]{
-                sortTableElementsByCountWgt->updateData(downTbv->outputData());
+                sortTableElementsByCountWgt->updateData(downTbv->outputRepeatData());
             });
             sortTableElementsByCountWgt->setAttribute(Qt::WA_DeleteOnClose);
             sortTableElementsByCountWgt->show();

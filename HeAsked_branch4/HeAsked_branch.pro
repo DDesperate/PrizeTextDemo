@@ -50,6 +50,7 @@ SOURCES += \
     downTbv/include.cpp \
     downTbv/listSelectItem.cpp \
     downTbv/outputData.cpp \
+    downTbv/outputRepeatData.cpp \
     downTbv/printSelectMixDataVec.cpp \
     downTbv/randomClearOneRow.cpp \
     downTbv/randomSelectPrizes.cpp \

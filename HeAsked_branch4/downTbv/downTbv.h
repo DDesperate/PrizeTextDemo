@@ -42,6 +42,7 @@ public:
     void copyUnDeleteNum_struct(QVector<slctTbRow> &vec);
     void printSelectMixDataVec(const QVector<slctTbRow>& vec);
     QVector<slctTbRow> outputData();
+    QVector<slctTbRow> outputRepeatData();
     void inputData(const QVector<slctTbRow> &newData);
     void showContextMenu_down(const QPoint &pos);
 
