@@ -5,8 +5,10 @@
 #include <QTableView>
 #include <QStandardItemModel>
 #include <QVector>
+#include <QPainter>
+#include <QPaintEvent>
+#include <QStyledItemDelegate>
 #include "przTbv/prizeTableView.h"
-#include "downTbv/selectDataDelegate.h"
 #include "downTbv/downStruct.h"
 
 class SortPrizeTableView : public PrizeTableView
@@ -15,20 +17,53 @@ class SortPrizeTableView : public PrizeTableView
 public:
     explicit SortPrizeTableView(QWidget *parent = nullptr) : PrizeTableView(parent) {}
 
-    void setSelectData(QVector<slctTbRow> *data)
-    {
-        selectDataVec = data;
-    }
-
-    QVector<slctTbRow> *getSelectData() { return selectDataVec; }
-
+    void setSelectData(QVector<slctTbRow> *data);
+    void setSparseData(QVector<SparseRow> *data);
+    void setBlockColumnDividers(const QVector<QVector<int>> &blockDividers);
     void refreshModel();
 
 protected:
     void dbClkDate(const QModelIndex &Index) override {}
+    void paintEvent(QPaintEvent *event) override;
 
 private:
-    QVector<slctTbRow> *selectDataVec = nullptr;
+    void refreshModelFromOriginal();
+    void refreshModelFromSparse();
+    void drawRedDividers(QPainter *painter);
+
+    QVector<slctTbRow> *prizeDataVec = nullptr;
+    QVector<SparseRow> *sparseDataVec = nullptr;
+    QVector<QVector<int>> m_blockDividers;
+    bool useSparseData = false;
+};
+
+class SortDataDelegate : public QStyledItemDelegate
+{
+    Q_OBJECT
+public:
+    explicit SortDataDelegate(QObject *parent = nullptr);
+
+    void setSelectData(QVector<slctTbRow> *data);
+    void setSparseData(QVector<SparseRow> *data);
+    void setColumnMapping(const QVector<int> &mapping);
+    void setBlockColumnMappings(const QVector<QVector<int>> &blockMappings);
+    void setBlockColumnDividers(const QVector<QVector<int>> &blockDividers);
+
+    void paint(QPainter *painter, const QStyleOptionViewItem &option,
+               const QModelIndex &index) const override;
+
+private:
+    void paintSparse(QPainter *painter, const QStyleOptionViewItem &option,
+                     const QModelIndex &index) const;
+    void paintOriginal(QPainter *painter, const QStyleOptionViewItem &option,
+                       const QModelIndex &index) const;
+
+    QVector<slctTbRow> *delegateSelectDataVec = nullptr;
+    QVector<SparseRow> *delegateSparseDataVec = nullptr;
+    QVector<int> m_displayColToNumber;
+    QVector<QVector<int>> m_blockMappings;
+    QVector<QVector<int>> m_blockDividers;
+    bool useSparseData = false;
 };
 
 class SortTableElementsByCountWgt : public QDialog
@@ -46,11 +81,10 @@ signals:
 
 private:
     void setupUI();
-    void refreshModel();
 
     SortPrizeTableView *m_tableView;
-    SelectDataDelegate *m_delegate;
-    QVector<slctTbRow> m_data;
+    SortDataDelegate *m_delegate;
+    QVector<SparseRow> m_sparseData;
 };
 
 #endif // SORTTABLEELEMENTSBYCOUNTWGT_H

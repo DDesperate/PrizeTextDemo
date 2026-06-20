@@ -2,22 +2,383 @@
 #include <QVBoxLayout>
 #include <QHeaderView>
 
+// ========== SortPrizeTableView ==========
+
+void SortPrizeTableView::setSelectData(QVector<slctTbRow> *data)
+{
+    prizeDataVec = data;
+    sparseDataVec = nullptr;
+    useSparseData = false;
+}
+
+void SortPrizeTableView::setSparseData(QVector<SparseRow> *data)
+{
+    sparseDataVec = data;
+    prizeDataVec = nullptr;
+    useSparseData = true;
+}
+
+void SortPrizeTableView::setBlockColumnDividers(const QVector<QVector<int>> &blockDividers)
+{
+    m_blockDividers = blockDividers;
+    viewport()->update();
+}
+
 void SortPrizeTableView::refreshModel()
 {
-    if (!selectDataVec)
+    if (useSparseData)
+        refreshModelFromSparse();
+    else
+        refreshModelFromOriginal();
+    viewport()->update();
+}
+
+void SortPrizeTableView::refreshModelFromOriginal()
+{
+    if (!prizeDataVec)
         return;
 
-    przModel.setRowCount(selectDataVec->size());
-
-    for (int row = 0; row < selectDataVec->size(); ++row) {
-        przModel.setItem(row, 0, new QStandardItem((*selectDataVec)[row].date));
-        for (int col = 1; col < 81; ++col) {
+    przModel.setRowCount(prizeDataVec->size());
+    for (int row = 0; row < prizeDataVec->size(); ++row) {
+        przModel.setItem(row, 0, new QStandardItem((*prizeDataVec)[row].date));
+        for (int col = 1; col < 81; ++col)
             przModel.setItem(row, col, new QStandardItem(""));
+    }
+}
+
+void SortPrizeTableView::refreshModelFromSparse()
+{
+    if (!sparseDataVec)
+        return;
+
+    przModel.setRowCount(sparseDataVec->size());
+    for (int row = 0; row < sparseDataVec->size(); ++row) {
+        const SparseRow &sr = (*sparseDataVec)[row];
+        przModel.setItem(row, 0, new QStandardItem(sr.isSeparator ? "" : sr.date));
+        for (int col = 1; col < 81; ++col)
+            przModel.setItem(row, col, new QStandardItem(""));
+        if (sr.isSeparator)
+            setRowHeight(row, 4);
+    }
+}
+
+void SortPrizeTableView::paintEvent(QPaintEvent *event)
+{
+    QTableView::paintEvent(event);
+
+    if (!useSparseData || m_blockDividers.isEmpty() || !sparseDataVec)
+        return;
+
+    QPainter painter(viewport());
+    drawRedDividers(&painter);
+}
+
+void SortPrizeTableView::drawRedDividers(QPainter *painter)
+{
+    if (!sparseDataVec || m_blockDividers.isEmpty())
+        return;
+
+    painter->setPen(QPen(Qt::red, 4));
+
+    int blockIndex = 0;
+    int startRow = 0;
+
+    for (int row = 0; row < sparseDataVec->size(); ++row) {
+        const SparseRow &sr = (*sparseDataVec)[row];
+        if (!sr.isSeparator)
+            continue;
+
+        if (blockIndex < m_blockDividers.size() && row > startRow) {
+            const QVector<int> &dividers = m_blockDividers[blockIndex];
+            for (int col : dividers) {
+                if (col < 1 || col > 80) continue;
+                int xPos = columnViewportPosition(col);
+                int yPosStart = rowViewportPosition(startRow);
+                int yPosEnd = rowViewportPosition(row - 1) + rowHeight(row - 1);
+                painter->drawLine(xPos, yPosStart, xPos, yPosEnd);
+            }
+        }
+        blockIndex++;
+        startRow = row + 1;
+    }
+
+    if (blockIndex < m_blockDividers.size() && startRow < sparseDataVec->size()) {
+        const QVector<int> &dividers = m_blockDividers[blockIndex];
+        for (int col : dividers) {
+            if (col < 1 || col > 80) continue;
+            int xPos = columnViewportPosition(col);
+            int yPosStart = rowViewportPosition(startRow);
+            int yPosEnd = rowViewportPosition(sparseDataVec->size() - 1) + rowHeight(sparseDataVec->size() - 1);
+            painter->drawLine(xPos, yPosStart, xPos, yPosEnd);
+        }
+    }
+}
+
+// ========== SortDataDelegate ==========
+
+SortDataDelegate::SortDataDelegate(QObject *parent)
+    : QStyledItemDelegate(parent)
+{
+}
+
+void SortDataDelegate::setSelectData(QVector<slctTbRow> *data)
+{
+    delegateSelectDataVec = data;
+    useSparseData = false;
+}
+
+void SortDataDelegate::setSparseData(QVector<SparseRow> *data)
+{
+    delegateSparseDataVec = data;
+    useSparseData = true;
+}
+
+void SortDataDelegate::setColumnMapping(const QVector<int> &mapping)
+{
+    m_displayColToNumber = mapping;
+    m_blockMappings.clear();
+    m_blockDividers.clear();
+}
+
+void SortDataDelegate::setBlockColumnMappings(const QVector<QVector<int>> &blockMappings)
+{
+    m_blockMappings = blockMappings;
+    m_displayColToNumber.clear();
+}
+
+void SortDataDelegate::setBlockColumnDividers(const QVector<QVector<int>> &blockDividers)
+{
+    m_blockDividers = blockDividers;
+}
+
+void SortDataDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
+                               const QModelIndex &index) const
+{
+    if (useSparseData)
+        paintSparse(painter, option, index);
+    else
+        paintOriginal(painter, option, index);
+}
+
+void SortDataDelegate::paintSparse(QPainter *painter, const QStyleOptionViewItem &option,
+                                     const QModelIndex &index) const
+{
+    if (!delegateSparseDataVec || delegateSparseDataVec->isEmpty()) {
+        QStyledItemDelegate::paint(painter, option, index);
+        return;
+    }
+
+    int row = index.row();
+    if (row < 0 || row >= delegateSparseDataVec->size()) {
+        QStyledItemDelegate::paint(painter, option, index);
+        return;
+    }
+
+    const SparseRow &rowData = (*delegateSparseDataVec)[row];
+    QRect rect = option.rect;
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    // 分隔行：绘制红色横线
+    if (rowData.isSeparator) {
+        painter->setPen(QPen(Qt::red, 2));
+        painter->drawLine(rect.left(), rect.center().y(), rect.right(), rect.center().y());
+        painter->restore();
+        return;
+    }
+
+    // 第一列：日期列
+    if (index.column() == 0) {
+        QColor bgColor = rowData.isSelected ? QColor(234, 177, 255) : QColor(135, 206, 235);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(bgColor);
+        painter->drawRect(rect);
+
+        painter->setPen(QPen(Qt::black));
+        int fontSize = qMin(rect.height(), rect.width()) * 0.4;
+        QFont font("Arial", fontSize > 0 ? fontSize : 9);
+        font.setBold(true);
+        painter->setFont(font);
+        painter->drawText(rect, Qt::AlignCenter, rowData.date);
+
+        painter->restore();
+        return;
+    }
+
+    int displayCol = index.column();
+    if (displayCol < 1 || displayCol > 80) {
+        painter->restore();
+        return;
+    }
+
+    int numberToShow = displayCol;
+    if (!m_blockMappings.isEmpty()) {
+        int blockIndex = 0;
+        for (int i = 0; i < row; ++i) {
+            if ((*delegateSparseDataVec)[i].isSeparator) blockIndex++;
+        }
+        if (blockIndex < m_blockMappings.size()) {
+            const QVector<int> &mapping = m_blockMappings[blockIndex];
+            if (mapping.size() >= 80 && displayCol >= 1 && displayCol <= 80)
+                numberToShow = mapping[displayCol - 1];
+        }
+    } else if (m_displayColToNumber.size() >= 80 && displayCol >= 1 && displayCol <= 80) {
+        numberToShow = m_displayColToNumber[displayCol - 1];
+    }
+
+    if (numberToShow < 1 || numberToShow > 80) {
+        painter->restore();
+        return;
+    }
+
+    // 整行选中背景
+    if (rowData.isSelected) {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(234, 177, 255));
+        painter->drawRect(rect);
+    }
+
+    // 红竖线
+    if (!m_blockDividers.isEmpty()) {
+        int blockIndex = 0;
+        for (int i = 0; i < row; ++i) {
+            if ((*delegateSparseDataVec)[i].isSeparator) blockIndex++;
+        }
+        if (blockIndex < m_blockDividers.size() && m_blockDividers[blockIndex].contains(displayCol)) {
+            painter->setPen(QPen(Qt::red, 4));
+            painter->drawLine(rect.left(), rect.top(), rect.left(), rect.bottom());
         }
     }
 
-    viewport()->update();
+    const slcInfo &prizeInfo = rowData.prizes[numberToShow];
+
+    if (prizeInfo.prize != 0) {
+        int centerX = rect.x() + rect.width() / 2;
+        int centerY = rect.y() + rect.height() / 2;
+        int radius = qMin(rect.width(), rect.height()) * 0.4;
+        int value = prizeInfo.prize;
+
+        if (prizeInfo.isDeleted) {
+            painter->setPen(QPen(Qt::black, 2));
+            painter->setBrush(Qt::transparent);
+            painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
+            painter->setPen(QPen(QColor(180, 0, 0), 2));
+            painter->drawLine(QPoint(rect.left() + 2, rect.top() + 2),
+                              QPoint(rect.right() - 2, rect.bottom() - 2));
+            painter->setPen(QColor(100, 100, 100));
+        } else if (prizeInfo.isSelect) {
+            painter->setPen(QPen(QColor(0, 100, 0), 2));
+            painter->setBrush(QColor(0, 200, 0));
+            painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
+            painter->setPen(Qt::white);
+        } else {
+            painter->setPen(QPen(Qt::black, 2));
+            painter->setBrush(prizeInfo.color);
+            painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
+            painter->setPen(Qt::white);
+        }
+
+        QFont font("Arial", radius * 1.0);
+        font.setBold(true);
+        painter->setFont(font);
+        painter->drawText(rect, Qt::AlignCenter, QString::number(value).rightJustified(2, '0'));
+    }
+
+    painter->restore();
 }
+
+void SortDataDelegate::paintOriginal(QPainter *painter, const QStyleOptionViewItem &option,
+                                       const QModelIndex &index) const
+{
+    if (!delegateSelectDataVec || delegateSelectDataVec->isEmpty()) {
+        QStyledItemDelegate::paint(painter, option, index);
+        return;
+    }
+
+    int row = index.row();
+    if (row < 0 || row >= delegateSelectDataVec->size()) {
+        QStyledItemDelegate::paint(painter, option, index);
+        return;
+    }
+
+    const slctTbRow &rowData = (*delegateSelectDataVec)[row];
+    QRect rect = option.rect;
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    // 第一列：日期列
+    if (index.column() == 0) {
+        QColor bgColor = rowData.isSelected ? QColor(234, 177, 255) : QColor(135, 206, 235);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(bgColor);
+        painter->drawRect(rect);
+
+        painter->setPen(QPen(Qt::black));
+        int fontSize = qMin(rect.height(), rect.width()) * 0.4;
+        QFont font("Arial", fontSize > 0 ? fontSize : 9);
+        font.setBold(true);
+        painter->setFont(font);
+        painter->drawText(rect, Qt::AlignCenter, rowData.date);
+
+        painter->restore();
+        return;
+    }
+
+    // 整行选中背景
+    if (rowData.isSelected) {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(234, 177, 255));
+        painter->drawRect(rect);
+    }
+
+    // 查找当前列对应的奖注
+    int col = index.column();
+    const slcInfo *prizeInfo = nullptr;
+    for (const slcInfo &info : rowData.prizes) {
+        if (info.prize == col) {
+            prizeInfo = &info;
+            break;
+        }
+    }
+
+    if (prizeInfo) {
+        int centerX = rect.x() + rect.width() / 2;
+        int centerY = rect.y() + rect.height() / 2;
+        int radius = qMin(rect.width(), rect.height()) * 0.4;
+        int value = prizeInfo->prize;
+
+        if (prizeInfo->isDeleted) {
+            painter->setPen(QPen(Qt::black, 2));
+            painter->setBrush(Qt::transparent);
+            painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
+            painter->setPen(QPen(QColor(180, 0, 0), 2));
+            painter->drawLine(QPoint(rect.left() + 2, rect.top() + 2),
+                              QPoint(rect.right() - 2, rect.bottom() - 2));
+            painter->setPen(QColor(100, 100, 100));
+        } else if (prizeInfo->isSelect) {
+            painter->setPen(QPen(QColor(0, 100, 0), 2));
+            painter->setBrush(QColor(0, 200, 0));
+            painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
+            painter->setPen(Qt::white);
+        } else {
+            painter->setPen(QPen(Qt::black, 2));
+            painter->setBrush(prizeInfo->color);
+            painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
+            painter->setPen(Qt::white);
+        }
+
+        QFont font("Arial", radius * 1.0);
+        font.setBold(true);
+        painter->setFont(font);
+        painter->drawText(rect, Qt::AlignCenter, QString::number(value).rightJustified(2, '0'));
+    }
+
+    painter->restore();
+}
+
+// ========== SortTableElementsByCountWgt ==========
 
 SortTableElementsByCountWgt::SortTableElementsByCountWgt(QWidget *parent, const QRect& rect) :
     QDialog(parent)
@@ -37,10 +398,10 @@ void SortTableElementsByCountWgt::setupUI()
     QVBoxLayout *layout = new QVBoxLayout(this);
 
     m_tableView = new SortPrizeTableView(this);
-    m_delegate = new SelectDataDelegate();
+    m_delegate = new SortDataDelegate();
 
-    m_tableView->setSelectData(&m_data);
-    m_delegate->delegateSelectDataVec = &m_data;
+    m_delegate->setSparseData(&m_sparseData);
+    m_tableView->setSparseData(&m_sparseData);
     m_tableView->setItemDelegate(m_delegate);
 
     layout->addWidget(m_tableView);
@@ -48,11 +409,15 @@ void SortTableElementsByCountWgt::setupUI()
 
 void SortTableElementsByCountWgt::updateData(const QVector<slctTbRow>& data)
 {
-    m_data = data;
-    m_tableView->refreshModel();
-}
+    if (!m_sparseData.isEmpty()) {
+        SparseRow sep;
+        sep.isSeparator = true;
+        m_sparseData.append(sep);
+    }
 
-void SortTableElementsByCountWgt::refreshModel()
-{
+    for (const slctTbRow &row : data) {
+        m_sparseData.append(row.toSparseRow());
+    }
+
     m_tableView->refreshModel();
 }

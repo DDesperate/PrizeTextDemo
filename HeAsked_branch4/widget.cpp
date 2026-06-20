@@ -294,6 +294,10 @@ Widget::Widget(QWidget *parent)
 
         }
 
+        // 同步downTbv数据到SortTableElementsByCountWgt
+        if (sortTableElementsByCountWgt != nullptr) {
+            sortTableElementsByCountWgt->updateData(downTbv->outputData());
+        }
 
     });
 

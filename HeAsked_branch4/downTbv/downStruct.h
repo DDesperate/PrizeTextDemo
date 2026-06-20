@@ -3,6 +3,7 @@
 
 #include<QString>
 #include<QColor>
+#include<QVector>
 
 typedef struct {
     QColor color;
@@ -32,6 +33,19 @@ typedef struct {
 
 }slcInfo;
 
+struct SparseRow {
+    bool isSelected = false;
+    bool isSeparator = false;
+    QString date;
+    QVector<slcInfo> prizes;
+
+    SparseRow() { prizes.resize(81); }
+
+    bool hasPrize(int col) const {
+        return col >= 1 && col <= 80 && prizes[col].prize != 0;
+    }
+};
+
 typedef struct{
     bool isSelected;
     QString date;
@@ -48,6 +62,17 @@ typedef struct{
 
     int prizesSize() const {
         return prizes.size();
+    }
+
+    SparseRow toSparseRow() const {
+        SparseRow sparse;
+        sparse.isSelected = this->isSelected;
+        sparse.date = this->date;
+        for (const slcInfo &info : this->prizes) {
+            int n = info.prize;
+            if (n >= 1 && n <= 80) sparse.prizes[n] = info;
+        }
+        return sparse;
     }
 }slctTbRow;
 
