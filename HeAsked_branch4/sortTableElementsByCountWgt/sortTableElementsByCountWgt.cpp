@@ -1,6 +1,8 @@
 #include "sortTableElementsByCountWgt.h"
 #include <QVBoxLayout>
 #include <QHeaderView>
+#include <QMessageBox>
+#include <QSet>
 
 // ========== SortPrizeTableView ==========
 
@@ -409,13 +411,40 @@ void SortTableElementsByCountWgt::setupUI()
 
 void SortTableElementsByCountWgt::updateData(const QVector<slctTbRow>& data)
 {
+    // 收集已有数据的日期集合
+    QSet<QString> existingDates;
+    for (const SparseRow &sr : m_sparseData) {
+        if (!sr.isSeparator && !sr.date.isEmpty())
+            existingDates.insert(sr.date);
+    }
+
+    // 过滤重复行
+    QVector<slctTbRow> uniqueRows;
+    int dupCount = 0;
+    for (const slctTbRow &row : data) {
+        if (existingDates.contains(row.date)) {
+            dupCount++;
+        } else {
+            uniqueRows.append(row);
+            existingDates.insert(row.date);
+        }
+    }
+
+    if (dupCount > 0) {
+        QMessageBox::information(this, QStringLiteral("提示"),
+                                 QStringLiteral("存在 %1 组重复数据，已跳过").arg(dupCount));
+    }
+
+    if (uniqueRows.isEmpty())
+        return;
+
     if (!m_sparseData.isEmpty()) {
         SparseRow sep;
         sep.isSeparator = true;
         m_sparseData.append(sep);
     }
 
-    for (const slctTbRow &row : data) {
+    for (const slctTbRow &row : uniqueRows) {
         m_sparseData.append(row.toSparseRow());
     }
 
