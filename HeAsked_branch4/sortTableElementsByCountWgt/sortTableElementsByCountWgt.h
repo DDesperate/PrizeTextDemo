@@ -9,6 +9,7 @@
 #include <QPaintEvent>
 #include <QStyledItemDelegate>
 #include <QPushButton>
+#include <QSpinBox>
 #include "przTbv/prizeTableView.h"
 #include "downTbv/downStruct.h"
 
@@ -90,6 +91,7 @@ private slots:
     void onModeMix();
     void onMoveSelectedToLeft();
     void onRestoreSelectedOrder();
+    void onRandomMarkNumbers();
 
 private:
     void setupUI();
@@ -110,6 +112,8 @@ private:
     QPushButton *btnModeMix;
     QPushButton *btnMoveSelectedLeft;
     QPushButton *btnRestoreOrder;
+    QSpinBox *spinBox_randomMark;
+    QPushButton *btnRandomMark;
 
     // 每次拉取的三种模式数据
     struct GroupData {

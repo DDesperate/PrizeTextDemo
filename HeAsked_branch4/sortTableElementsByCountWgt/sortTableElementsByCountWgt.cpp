@@ -4,7 +4,11 @@
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QSet>
+#include <QLabel>
+#include <QSpinBox>
+#include <QDateTime>
 #include <algorithm>
+#include <QRandomGenerator>
 
 // ========== SortPrizeTableView ==========
 
@@ -402,6 +406,10 @@ void SortTableElementsByCountWgt::setupUI()
     btnModeMix = new QPushButton(QStringLiteral("混合模式"), this);
     btnMoveSelectedLeft = new QPushButton(QStringLiteral("选中项靠边"), this);
     btnRestoreOrder = new QPushButton(QStringLiteral("靠边项还原"), this);
+    spinBox_randomMark = new QSpinBox(this);
+    spinBox_randomMark->setRange(0, 20);
+    spinBox_randomMark->setValue(10);
+    btnRandomMark = new QPushButton(QStringLiteral("随机标记"), this);
 
     btnLayout->addWidget(btnGroupByFreq);
     btnLayout->addWidget(btnUngroupFreq);
@@ -412,6 +420,11 @@ void SortTableElementsByCountWgt::setupUI()
     btnLayout->addSpacing(20);
     btnLayout->addWidget(btnMoveSelectedLeft);
     btnLayout->addWidget(btnRestoreOrder);
+    btnLayout->addSpacing(20);
+    btnLayout->addWidget(new QLabel(QStringLiteral("随机选"), this));
+    btnLayout->addWidget(spinBox_randomMark);
+    btnLayout->addWidget(new QLabel(QStringLiteral("个数字"), this));
+    btnLayout->addWidget(btnRandomMark);
     btnLayout->addStretch();
     layout->addLayout(btnLayout);
 
@@ -431,6 +444,7 @@ void SortTableElementsByCountWgt::setupUI()
     connect(btnModeMix, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onModeMix);
     connect(btnMoveSelectedLeft, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onMoveSelectedToLeft);
     connect(btnRestoreOrder, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onRestoreSelectedOrder);
+    connect(btnRandomMark, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onRandomMarkNumbers);
 }
 
 void SortTableElementsByCountWgt::rebuildSparseData()
@@ -768,4 +782,50 @@ void SortTableElementsByCountWgt::onRestoreSelectedOrder()
 
     QMessageBox::information(this, QStringLiteral("完成"),
                              QStringLiteral("已还原为原始排列"));
+}
+
+void SortTableElementsByCountWgt::onRandomMarkNumbers()
+{
+    if (m_sparseData.isEmpty()) {
+        QMessageBox::information(this, QStringLiteral("提示"),
+                                 QStringLiteral("暂无数据，请先拉取数据"));
+        return;
+    }
+
+    int n = spinBox_randomMark->value();
+    if (n == 0) {
+        QMessageBox::warning(nullptr, QStringLiteral("警告"),
+                             QStringLiteral("请选择大于0的数字"));
+        return;
+    }
+
+    // 1. 清除所有已有的选中状态
+    for (SparseRow &sr : m_sparseData) {
+        for (int col = 1; col <= 80; ++col) {
+            sr.prizes[col].isSelect = false;
+        }
+    }
+
+    // 2. 随机选择n个不重复的数字(1-80)
+    QByteArray seedData = QByteArray::number(QDateTime::currentMSecsSinceEpoch());
+    QRandomGenerator gen(seedData.toULongLong());
+    QSet<int> numbersToMark;
+    while (numbersToMark.size() < n && numbersToMark.size() < 80) {
+        numbersToMark.insert(gen.bounded(1, 81));
+    }
+
+    // 3. 在所有行中，将这n个数字标记为选中
+    int markedCount = 0;
+    for (SparseRow &sr : m_sparseData) {
+        if (sr.isSeparator) continue;
+        for (int col = 1; col <= 80; ++col) {
+            if (sr.prizes[col].prize != 0 && numbersToMark.contains(sr.prizes[col].prize)) {
+                sr.prizes[col].isSelect = true;
+                sr.prizes[col].isDeleted = false;
+                markedCount++;
+            }
+        }
+    }
+
+    m_tableView->refreshModel();
 }
