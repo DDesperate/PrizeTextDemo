@@ -17,16 +17,25 @@ class SortPrizeTableView : public PrizeTableView
 {
     Q_OBJECT
 public:
-    explicit SortPrizeTableView(QWidget *parent = nullptr) : PrizeTableView(parent) {}
+    explicit SortPrizeTableView(QWidget *parent = nullptr) : PrizeTableView(parent) {
+        setSelectionBehavior(QAbstractItemView::SelectItems);
+        setSelectionMode(QAbstractItemView::ExtendedSelection);
+        setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(this, &QTableView::customContextMenuRequested, this, &SortPrizeTableView::showContextMenu);
+    }
 
     void setSelectData(QVector<slctTbRow> *data);
     void setSparseData(QVector<SparseRow> *data);
     void setBlockColumnDividers(const QVector<QVector<int>> &blockDividers);
+    void setBlockColumnMappings(const QVector<QVector<int>> &blockMappings);
     void refreshModel();
 
 protected:
     void dbClkDate(const QModelIndex &Index) override {}
     void paintEvent(QPaintEvent *event) override;
+
+private slots:
+    void showContextMenu(const QPoint &pos);
 
 private:
     void refreshModelFromOriginal();
@@ -36,6 +45,7 @@ private:
     QVector<slctTbRow> *prizeDataVec = nullptr;
     QVector<SparseRow> *sparseDataVec = nullptr;
     QVector<QVector<int>> m_blockDividers;
+    QVector<QVector<int>> m_blockMappings;
     bool useSparseData = false;
 };
 

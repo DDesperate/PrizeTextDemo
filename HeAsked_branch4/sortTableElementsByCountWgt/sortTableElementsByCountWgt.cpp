@@ -9,6 +9,10 @@
 #include <QDateTime>
 #include <algorithm>
 #include <QRandomGenerator>
+#include <QMenu>
+#include <QClipboard>
+#include <QApplication>
+#include "genericfunc.h"
 
 // ========== SortPrizeTableView ==========
 
@@ -30,6 +34,11 @@ void SortPrizeTableView::setBlockColumnDividers(const QVector<QVector<int>> &blo
 {
     m_blockDividers = blockDividers;
     viewport()->update();
+}
+
+void SortPrizeTableView::setBlockColumnMappings(const QVector<QVector<int>> &blockMappings)
+{
+    m_blockMappings = blockMappings;
 }
 
 void SortPrizeTableView::refreshModel()
@@ -120,6 +129,82 @@ void SortPrizeTableView::drawRedDividers(QPainter *painter)
             painter->drawLine(xPos, yPosStart, xPos, yPosEnd);
         }
     }
+}
+
+void SortPrizeTableView::showContextMenu(const QPoint &pos)
+{
+    if (!sparseDataVec || sparseDataVec->isEmpty())
+        return;
+
+    QMenu contextMenu;
+    QAction copySelectAction(QStringLiteral("复制选中区域"), this);
+
+    connect(&copySelectAction, &QAction::triggered, this, [=]{
+        int mainRow, mainCol, rowSpan, colSpan;
+        if (!getSelectedRectInfo(this, mainRow, mainCol, rowSpan, colSpan))
+            return;
+
+        int selStartRow = mainRow - 1;
+        int selEndRow = selStartRow + rowSpan - 1;
+
+        // 找到选中区域所在的数据块范围（不允许跨分隔行）
+        int blockStart = selStartRow;
+        int blockEnd = selEndRow;
+        int blockIndex = 0;
+        for (int i = selStartRow; i <= selEndRow; ++i) {
+            if ((*sparseDataVec)[i].isSeparator) {
+                blockEnd = i - 1;
+                break;
+            }
+        }
+        for (int i = selStartRow; i >= 0; --i) {
+            if ((*sparseDataVec)[i].isSeparator) {
+                blockStart = i + 1;
+                break;
+            }
+        }
+        // 计算blockIndex
+        for (int i = 0; i < blockStart; ++i) {
+            if ((*sparseDataVec)[i].isSeparator)
+                blockIndex++;
+        }
+
+        // 限制到当前块范围
+        int effectiveStartRow = qMax(selStartRow, blockStart);
+        int effectiveEndRow = qMin(selEndRow, blockEnd);
+
+        // 将显示列映射到实际数字
+        auto displayColToNumber = [&](int displayCol) -> int {
+            if (!m_blockMappings.isEmpty() && blockIndex < m_blockMappings.size()) {
+                const QVector<int> &mapping = m_blockMappings[blockIndex];
+                if (mapping.size() >= 80 && displayCol >= 1 && displayCol <= 80)
+                    return mapping[displayCol - 1];
+            }
+            return displayCol;
+        };
+
+        QSet<int> selectedNumbers;
+        for (int c = mainCol; c < mainCol + colSpan; ++c) {
+            selectedNumbers.insert(displayColToNumber(c));
+        }
+
+        QString clipboardText;
+        for (int row = effectiveStartRow; row <= effectiveEndRow; ++row) {
+            const SparseRow &sr = (*sparseDataVec)[row];
+            for (int col = 1; col <= 80; ++col) {
+                const slcInfo &info = sr.prizes[col];
+                if (info.prize != 0 && !info.isDeleted && selectedNumbers.contains(col))
+                    clipboardText += QString("%1 ").arg(info.prize, 2, 10, QChar('0'));
+            }
+            clipboardText += "\n";
+        }
+
+        QClipboard *clipboard = QApplication::clipboard();
+        clipboard->setText(clipboardText);
+    });
+
+    contextMenu.addAction(&copySelectAction);
+    contextMenu.exec(mapToGlobal(pos));
 }
 
 // ========== SortDataDelegate ==========
@@ -483,6 +568,7 @@ void SortTableElementsByCountWgt::rebuildSparseData()
 
     m_delegate->setBlockColumnMappings(QVector<QVector<int>>());
     m_delegate->setBlockColumnDividers(QVector<QVector<int>>());
+    m_tableView->setBlockColumnMappings(QVector<QVector<int>>());
     m_tableView->setBlockColumnDividers(QVector<QVector<int>>());
     m_tableView->refreshModel();
 }
@@ -609,6 +695,7 @@ void SortTableElementsByCountWgt::onGroupByFreq()
 
     m_delegate->setBlockColumnMappings(blockMappings);
     m_delegate->setBlockColumnDividers(QVector<QVector<int>>());
+    m_tableView->setBlockColumnMappings(blockMappings);
     m_tableView->setBlockColumnDividers(blockDividers);
     m_tableView->refreshModel();
 
@@ -618,6 +705,7 @@ void SortTableElementsByCountWgt::onGroupByFreq()
 void SortTableElementsByCountWgt::onUngroupFreq()
 {
     m_delegate->setColumnMapping(QVector<int>());
+    m_tableView->setBlockColumnMappings(QVector<QVector<int>>());
     m_tableView->setBlockColumnDividers(QVector<QVector<int>>());
     m_originalBlockMappings.clear();
     m_blockDividers.clear();
@@ -753,6 +841,7 @@ void SortTableElementsByCountWgt::onMoveSelectedToLeft()
     // 3. 应用新映射，红竖线位置不变
     m_delegate->setBlockColumnMappings(newBlockMappings);
     m_delegate->setBlockColumnDividers(QVector<QVector<int>>());
+    m_tableView->setBlockColumnMappings(newBlockMappings);
     m_tableView->setBlockColumnDividers(m_blockDividers);
     m_tableView->refreshModel();
 
@@ -780,6 +869,7 @@ void SortTableElementsByCountWgt::onRestoreSelectedOrder()
 
     m_delegate->setBlockColumnMappings(m_originalBlockMappings);
     m_delegate->setBlockColumnDividers(QVector<QVector<int>>());
+    m_tableView->setBlockColumnMappings(m_originalBlockMappings);
     m_tableView->setBlockColumnDividers(m_blockDividers);
     m_tableView->refreshModel();
 
