@@ -400,6 +400,7 @@ Widget::Widget(QWidget *parent)
 
     //标记下表中最后一行的重号
     connect(newestRepeatPrize,&QPushButton::clicked,[=]{
+        downTbv->clearHighLight();
         QList<quint8> list = upTbv->getLastRow();
         downTbv->selectListItem(list);
     });

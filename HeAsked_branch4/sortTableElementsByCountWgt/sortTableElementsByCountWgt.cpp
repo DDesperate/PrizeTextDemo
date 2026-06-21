@@ -850,6 +850,7 @@ void SortTableElementsByCountWgt::markLatestRepeatPrize(const QList<quint8> &lis
     for (SparseRow &sr : m_sparseData) {
         if (sr.isSeparator) continue;
         for (int col = 1; col <= 80; ++col) {
+            sr.prizes[col].isSelect = false;
             if (sr.prizes[col].prize != 0 && list.contains(sr.prizes[col].prize)) {
                 sr.prizes[col].isSelect = true;
                 sr.prizes[col].isDeleted = false;
