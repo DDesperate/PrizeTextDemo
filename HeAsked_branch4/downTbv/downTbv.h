@@ -43,6 +43,8 @@ public:
     void printSelectMixDataVec(const QVector<slctTbRow>& vec);
     QVector<slctTbRow> outputData();
     QVector<slctTbRow> outputRepeatData();
+    QVector<slctTbRow> outputNeighborData();
+    QVector<slctTbRow> outputMixData();
     void inputData(const QVector<slctTbRow> &newData);
     void showContextMenu_down(const QPoint &pos);
 

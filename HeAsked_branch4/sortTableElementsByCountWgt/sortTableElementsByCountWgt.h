@@ -75,7 +75,9 @@ public:
     explicit SortTableElementsByCountWgt(QWidget *parent, const QRect& rect);
     ~SortTableElementsByCountWgt();
 
-    void updateData(const QVector<slctTbRow>& data);
+    void updateData(const QVector<slctTbRow>& repeatData,
+                    const QVector<slctTbRow>& neighborData,
+                    const QVector<slctTbRow>& mixData);
 
 signals:
     void requestDataSync();
@@ -83,20 +85,39 @@ signals:
 private slots:
     void onGroupByFreq();
     void onUngroupFreq();
+    void onModeRepeat();
+    void onModeNeighbor();
+    void onModeMix();
 
 private:
     void setupUI();
     void computeBlockMappingAndDividers(const QVector<const SparseRow *> &rows,
                                         QVector<int> &mapping, QVector<int> &dividers);
+    void rebuildSparseData();
 
     SortPrizeTableView *m_tableView;
     SortDataDelegate *m_delegate;
     QPushButton *btnGroupByFreq;
     QPushButton *btnUngroupFreq;
+    QPushButton *btnModeRepeat;
+    QPushButton *btnModeNeighbor;
+    QPushButton *btnModeMix;
+
+    // 每次拉取的三种模式数据
+    struct GroupData {
+        QVector<slctTbRow> repeatData;
+        QVector<slctTbRow> neighborData;
+        QVector<slctTbRow> mixData;
+    };
+    QVector<GroupData> m_groups;
+
     QVector<SparseRow> m_sparseData;
     bool m_isGroupedByFreq = false;
     QVector<QVector<int>> m_originalBlockMappings;
     QVector<QVector<int>> m_blockDividers;
+    int m_currentMode = 0; // 0=repeat, 1=neighbor, 2=mix
 };
+
+
 
 #endif // SORTTABLEELEMENTSBYCOUNTWGT_H

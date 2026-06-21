@@ -184,7 +184,6 @@ void SortDataDelegate::paintSparse(QPainter *painter, const QStyleOptionViewItem
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
 
-    // 分隔行：绘制红色横线
     if (rowData.isSeparator) {
         painter->setPen(QPen(Qt::red, 2));
         painter->drawLine(rect.left(), rect.center().y(), rect.right(), rect.center().y());
@@ -192,7 +191,6 @@ void SortDataDelegate::paintSparse(QPainter *painter, const QStyleOptionViewItem
         return;
     }
 
-    // 第一列：日期列
     if (index.column() == 0) {
         QColor bgColor = rowData.isSelected ? QColor(234, 177, 255) : QColor(135, 206, 235);
         painter->setPen(Qt::NoPen);
@@ -236,14 +234,12 @@ void SortDataDelegate::paintSparse(QPainter *painter, const QStyleOptionViewItem
         return;
     }
 
-    // 整行选中背景
     if (rowData.isSelected) {
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor(234, 177, 255));
         painter->drawRect(rect);
     }
 
-    // 红竖线
     if (!m_blockDividers.isEmpty()) {
         int blockIndex = 0;
         for (int i = 0; i < row; ++i) {
@@ -312,7 +308,6 @@ void SortDataDelegate::paintOriginal(QPainter *painter, const QStyleOptionViewIt
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
 
-    // 第一列：日期列
     if (index.column() == 0) {
         QColor bgColor = rowData.isSelected ? QColor(234, 177, 255) : QColor(135, 206, 235);
         painter->setPen(Qt::NoPen);
@@ -330,14 +325,12 @@ void SortDataDelegate::paintOriginal(QPainter *painter, const QStyleOptionViewIt
         return;
     }
 
-    // 整行选中背景
     if (rowData.isSelected) {
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor(234, 177, 255));
         painter->drawRect(rect);
     }
 
-    // 查找当前列对应的奖注
     int col = index.column();
     const slcInfo *prizeInfo = nullptr;
     for (const slcInfo &info : rowData.prizes) {
@@ -404,8 +397,16 @@ void SortTableElementsByCountWgt::setupUI()
     QHBoxLayout *btnLayout = new QHBoxLayout();
     btnGroupByFreq = new QPushButton(QStringLiteral("按出现频率分组"), this);
     btnUngroupFreq = new QPushButton(QStringLiteral("取消按照频率分组"), this);
+    btnModeRepeat = new QPushButton(QStringLiteral("重号模式"), this);
+    btnModeNeighbor = new QPushButton(QStringLiteral("邻号模式"), this);
+    btnModeMix = new QPushButton(QStringLiteral("混合模式"), this);
+
     btnLayout->addWidget(btnGroupByFreq);
     btnLayout->addWidget(btnUngroupFreq);
+    btnLayout->addSpacing(20);
+    btnLayout->addWidget(btnModeRepeat);
+    btnLayout->addWidget(btnModeNeighbor);
+    btnLayout->addWidget(btnModeMix);
     btnLayout->addStretch();
     layout->addLayout(btnLayout);
 
@@ -420,9 +421,51 @@ void SortTableElementsByCountWgt::setupUI()
 
     connect(btnGroupByFreq, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onGroupByFreq);
     connect(btnUngroupFreq, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onUngroupFreq);
+    connect(btnModeRepeat, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onModeRepeat);
+    connect(btnModeNeighbor, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onModeNeighbor);
+    connect(btnModeMix, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onModeMix);
 }
 
-void SortTableElementsByCountWgt::updateData(const QVector<slctTbRow>& data)
+void SortTableElementsByCountWgt::rebuildSparseData()
+{
+    m_sparseData.clear();
+
+    for (int g = 0; g < m_groups.size(); ++g) {
+        if (g > 0) {
+            SparseRow sep;
+            sep.isSeparator = true;
+            m_sparseData.append(sep);
+        }
+
+        const QVector<slctTbRow> *src = nullptr;
+        switch (m_currentMode) {
+        case 0: src = &m_groups[g].repeatData; break;
+        case 1: src = &m_groups[g].neighborData; break;
+        case 2: src = &m_groups[g].mixData; break;
+        }
+
+        for (const slctTbRow &row : *src) {
+            m_sparseData.append(row.toSparseRow());
+        }
+    }
+
+    // 如果当前处于分组状态，重新应用分组映射
+    if (m_isGroupedByFreq) {
+        // 先刷新数据再重新分组
+        m_tableView->refreshModel();
+        onGroupByFreq();
+        return;
+    }
+
+    m_delegate->setBlockColumnMappings(QVector<QVector<int>>());
+    m_delegate->setBlockColumnDividers(QVector<QVector<int>>());
+    m_tableView->setBlockColumnDividers(QVector<QVector<int>>());
+    m_tableView->refreshModel();
+}
+
+void SortTableElementsByCountWgt::updateData(const QVector<slctTbRow>& repeatData,
+                                              const QVector<slctTbRow>& neighborData,
+                                              const QVector<slctTbRow>& mixData)
 {
     // 收集已有数据的日期集合
     QSet<QString> existingDates;
@@ -431,15 +474,25 @@ void SortTableElementsByCountWgt::updateData(const QVector<slctTbRow>& data)
             existingDates.insert(sr.date);
     }
 
-    // 过滤重复行
-    QVector<slctTbRow> uniqueRows;
+    // 用当前模式的数据过滤重复行
+    const QVector<slctTbRow> *currentSrc = nullptr;
+    switch (m_currentMode) {
+    case 0: currentSrc = &repeatData; break;
+    case 1: currentSrc = &neighborData; break;
+    case 2: currentSrc = &mixData; break;
+    }
+
+    QVector<slctTbRow> uniqueRepeat, uniqueNeighbor, uniqueMix;
     int dupCount = 0;
-    for (const slctTbRow &row : data) {
-        if (existingDates.contains(row.date)) {
+
+    for (int i = 0; i < repeatData.size(); ++i) {
+        if (existingDates.contains(repeatData[i].date)) {
             dupCount++;
         } else {
-            uniqueRows.append(row);
-            existingDates.insert(row.date);
+            uniqueRepeat.append(repeatData[i]);
+            uniqueNeighbor.append(neighborData[i]);
+            uniqueMix.append(mixData[i]);
+            existingDates.insert(repeatData[i].date);
         }
     }
 
@@ -448,20 +501,18 @@ void SortTableElementsByCountWgt::updateData(const QVector<slctTbRow>& data)
                                  QStringLiteral("存在 %1 组重复数据，已跳过").arg(dupCount));
     }
 
-    if (uniqueRows.isEmpty())
+    if (uniqueRepeat.isEmpty())
         return;
 
-    if (!m_sparseData.isEmpty()) {
-        SparseRow sep;
-        sep.isSeparator = true;
-        m_sparseData.append(sep);
-    }
+    // 存入新的一组数据
+    GroupData grp;
+    grp.repeatData = uniqueRepeat;
+    grp.neighborData = uniqueNeighbor;
+    grp.mixData = uniqueMix;
+    m_groups.append(grp);
 
-    for (const slctTbRow &row : uniqueRows) {
-        m_sparseData.append(row.toSparseRow());
-    }
-
-    m_tableView->refreshModel();
+    // 重建显示数据
+    rebuildSparseData();
 }
 
 void SortTableElementsByCountWgt::computeBlockMappingAndDividers(const QVector<const SparseRow *> &rows,
@@ -548,4 +599,22 @@ void SortTableElementsByCountWgt::onUngroupFreq()
     m_blockDividers.clear();
     m_isGroupedByFreq = false;
     m_tableView->refreshModel();
+}
+
+void SortTableElementsByCountWgt::onModeRepeat()
+{
+    m_currentMode = 0;
+    rebuildSparseData();
+}
+
+void SortTableElementsByCountWgt::onModeNeighbor()
+{
+    m_currentMode = 1;
+    rebuildSparseData();
+}
+
+void SortTableElementsByCountWgt::onModeMix()
+{
+    m_currentMode = 2;
+    rebuildSparseData();
 }
