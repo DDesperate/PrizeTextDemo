@@ -400,6 +400,8 @@ void SortTableElementsByCountWgt::setupUI()
     btnModeRepeat = new QPushButton(QStringLiteral("重号模式"), this);
     btnModeNeighbor = new QPushButton(QStringLiteral("邻号模式"), this);
     btnModeMix = new QPushButton(QStringLiteral("混合模式"), this);
+    btnMoveSelectedLeft = new QPushButton(QStringLiteral("选中项靠边"), this);
+    btnRestoreOrder = new QPushButton(QStringLiteral("靠边项还原"), this);
 
     btnLayout->addWidget(btnGroupByFreq);
     btnLayout->addWidget(btnUngroupFreq);
@@ -407,6 +409,9 @@ void SortTableElementsByCountWgt::setupUI()
     btnLayout->addWidget(btnModeRepeat);
     btnLayout->addWidget(btnModeNeighbor);
     btnLayout->addWidget(btnModeMix);
+    btnLayout->addSpacing(20);
+    btnLayout->addWidget(btnMoveSelectedLeft);
+    btnLayout->addWidget(btnRestoreOrder);
     btnLayout->addStretch();
     layout->addLayout(btnLayout);
 
@@ -424,6 +429,8 @@ void SortTableElementsByCountWgt::setupUI()
     connect(btnModeRepeat, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onModeRepeat);
     connect(btnModeNeighbor, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onModeNeighbor);
     connect(btnModeMix, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onModeMix);
+    connect(btnMoveSelectedLeft, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onMoveSelectedToLeft);
+    connect(btnRestoreOrder, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onRestoreSelectedOrder);
 }
 
 void SortTableElementsByCountWgt::rebuildSparseData()
@@ -617,4 +624,148 @@ void SortTableElementsByCountWgt::onModeMix()
 {
     m_currentMode = 2;
     rebuildSparseData();
+}
+
+QSet<int> SortTableElementsByCountWgt::getSelectedNumbersInBlock(const QVector<const SparseRow *> &rows) const
+{
+    QSet<int> selected;
+    for (const SparseRow *sr : rows) {
+        for (int col = 1; col <= 80; ++col) {
+            if (sr->prizes[col].prize != 0 && sr->prizes[col].isSelect)
+                selected.insert(col);
+        }
+    }
+    return selected;
+}
+
+void SortTableElementsByCountWgt::rearrangeSubBlock(QVector<int> &mapping, int start, int end,
+                                                      const QSet<int> &selectedNumbers)
+{
+    if (start > end || start < 0 || end >= mapping.size())
+        return;
+
+    QVector<int> selected;
+    QVector<int> unselected;
+
+    for (int i = start; i <= end; ++i) {
+        int num = mapping[i];
+        if (selectedNumbers.contains(num))
+            selected.append(num);
+        else
+            unselected.append(num);
+    }
+
+    int idx = start;
+    for (int num : selected)
+        mapping[idx++] = num;
+    for (int num : unselected)
+        mapping[idx++] = num;
+}
+
+void SortTableElementsByCountWgt::onMoveSelectedToLeft()
+{
+    if (!m_isGroupedByFreq) {
+        QMessageBox::information(this, QStringLiteral("提示"),
+                                 QStringLiteral("此功能只能在按出现频率分组状态下执行"));
+        return;
+    }
+
+    if (m_sparseData.isEmpty()) {
+        QMessageBox::information(this, QStringLiteral("提示"),
+                                 QStringLiteral("暂无数据"));
+        return;
+    }
+
+    // 1. 重新分割数据块，获取每个块的行指针和选中数字
+    QVector<QVector<const SparseRow *>> allBlockRows;
+    QVector<QSet<int>> allSelectedNumbers;
+    QVector<const SparseRow *> currentBlockRows;
+
+    for (int i = 0; i < m_sparseData.size(); ++i) {
+        const SparseRow &sr = m_sparseData[i];
+        if (sr.isSeparator) {
+            if (!currentBlockRows.isEmpty()) {
+                allBlockRows.append(currentBlockRows);
+                allSelectedNumbers.append(getSelectedNumbersInBlock(currentBlockRows));
+                currentBlockRows.clear();
+            }
+        } else {
+            currentBlockRows.append(&sr);
+        }
+    }
+    if (!currentBlockRows.isEmpty()) {
+        allBlockRows.append(currentBlockRows);
+        allSelectedNumbers.append(getSelectedNumbersInBlock(currentBlockRows));
+    }
+
+    // 检查是否有选中项
+    bool hasSelection = false;
+    for (const auto &selSet : allSelectedNumbers) {
+        if (!selSet.isEmpty()) {
+            hasSelection = true;
+            break;
+        }
+    }
+    if (!hasSelection) {
+        QMessageBox::information(this, QStringLiteral("提示"),
+                                 QStringLiteral("没有选中任何奖注"));
+        return;
+    }
+
+    // 2. 对每个数据块单独处理
+    QVector<QVector<int>> newBlockMappings;
+
+    for (int blockIdx = 0; blockIdx < m_originalBlockMappings.size(); ++blockIdx) {
+        QVector<int> mapping = m_originalBlockMappings[blockIdx];
+        const QVector<int> &dividers = m_blockDividers[blockIdx];
+        const QSet<int> &selectedNumbers = allSelectedNumbers[blockIdx];
+
+        int start = 0;
+        for (int divider : dividers) {
+            int end = divider - 2;
+            rearrangeSubBlock(mapping, start, end, selectedNumbers);
+            start = divider - 1;
+        }
+
+        if (mapping.size() == 80)
+            rearrangeSubBlock(mapping, start, 79, selectedNumbers);
+
+        newBlockMappings.append(mapping);
+    }
+
+    // 3. 应用新映射，红竖线位置不变
+    m_delegate->setBlockColumnMappings(newBlockMappings);
+    m_delegate->setBlockColumnDividers(QVector<QVector<int>>());
+    m_tableView->setBlockColumnDividers(m_blockDividers);
+    m_tableView->refreshModel();
+
+    int totalSelected = 0;
+    for (const auto &selSet : allSelectedNumbers)
+        totalSelected += selSet.size();
+
+    QMessageBox::information(this, QStringLiteral("完成"),
+                             QStringLiteral("已将 %1 个选中数字靠边排列").arg(totalSelected));
+}
+
+void SortTableElementsByCountWgt::onRestoreSelectedOrder()
+{
+    if (!m_isGroupedByFreq) {
+        QMessageBox::information(this, QStringLiteral("提示"),
+                                 QStringLiteral("此功能只能在按出现频率分组状态下执行"));
+        return;
+    }
+
+    if (m_originalBlockMappings.isEmpty()) {
+        QMessageBox::information(this, QStringLiteral("提示"),
+                                 QStringLiteral("没有可还原的映射"));
+        return;
+    }
+
+    m_delegate->setBlockColumnMappings(m_originalBlockMappings);
+    m_delegate->setBlockColumnDividers(QVector<QVector<int>>());
+    m_tableView->setBlockColumnDividers(m_blockDividers);
+    m_tableView->refreshModel();
+
+    QMessageBox::information(this, QStringLiteral("完成"),
+                             QStringLiteral("已还原为原始排列"));
 }

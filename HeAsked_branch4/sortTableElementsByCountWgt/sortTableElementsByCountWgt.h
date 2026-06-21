@@ -88,12 +88,18 @@ private slots:
     void onModeRepeat();
     void onModeNeighbor();
     void onModeMix();
+    void onMoveSelectedToLeft();
+    void onRestoreSelectedOrder();
 
 private:
     void setupUI();
     void computeBlockMappingAndDividers(const QVector<const SparseRow *> &rows,
                                         QVector<int> &mapping, QVector<int> &dividers);
     void rebuildSparseData();
+
+    QSet<int> getSelectedNumbersInBlock(const QVector<const SparseRow *> &rows) const;
+    void rearrangeSubBlock(QVector<int> &mapping, int start, int end,
+                           const QSet<int> &selectedNumbers);
 
     SortPrizeTableView *m_tableView;
     SortDataDelegate *m_delegate;
@@ -102,6 +108,8 @@ private:
     QPushButton *btnModeRepeat;
     QPushButton *btnModeNeighbor;
     QPushButton *btnModeMix;
+    QPushButton *btnMoveSelectedLeft;
+    QPushButton *btnRestoreOrder;
 
     // 每次拉取的三种模式数据
     struct GroupData {
