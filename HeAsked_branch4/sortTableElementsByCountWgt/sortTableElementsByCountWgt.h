@@ -82,6 +82,7 @@ public:
 
 signals:
     void requestDataSync();
+    void requestLatestRepeatPrize();
 
 private slots:
     void onGroupByFreq();
@@ -92,6 +93,10 @@ private slots:
     void onMoveSelectedToLeft();
     void onRestoreSelectedOrder();
     void onRandomMarkNumbers();
+    void onNewestRepeatPrize();
+
+public:
+    void markLatestRepeatPrize(const QList<quint8> &list);
 
 private:
     void setupUI();
@@ -114,6 +119,7 @@ private:
     QPushButton *btnRestoreOrder;
     QSpinBox *spinBox_randomMark;
     QPushButton *btnRandomMark;
+    QPushButton *btnNewestRepeatPrize;
 
     // 每次拉取的三种模式数据
     struct GroupData {

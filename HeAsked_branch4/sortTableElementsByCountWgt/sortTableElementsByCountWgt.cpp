@@ -410,6 +410,7 @@ void SortTableElementsByCountWgt::setupUI()
     spinBox_randomMark->setRange(0, 20);
     spinBox_randomMark->setValue(10);
     btnRandomMark = new QPushButton(QStringLiteral("随机标记"), this);
+    btnNewestRepeatPrize = new QPushButton(QStringLiteral("最新重号"), this);
 
     btnLayout->addWidget(btnGroupByFreq);
     btnLayout->addWidget(btnUngroupFreq);
@@ -425,6 +426,7 @@ void SortTableElementsByCountWgt::setupUI()
     btnLayout->addWidget(spinBox_randomMark);
     btnLayout->addWidget(new QLabel(QStringLiteral("个数字"), this));
     btnLayout->addWidget(btnRandomMark);
+    btnLayout->addWidget(btnNewestRepeatPrize);
     btnLayout->addStretch();
     layout->addLayout(btnLayout);
 
@@ -445,6 +447,7 @@ void SortTableElementsByCountWgt::setupUI()
     connect(btnMoveSelectedLeft, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onMoveSelectedToLeft);
     connect(btnRestoreOrder, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onRestoreSelectedOrder);
     connect(btnRandomMark, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onRandomMarkNumbers);
+    connect(btnNewestRepeatPrize, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onNewestRepeatPrize);
 }
 
 void SortTableElementsByCountWgt::rebuildSparseData()
@@ -828,4 +831,37 @@ void SortTableElementsByCountWgt::onRandomMarkNumbers()
     }
 
     m_tableView->refreshModel();
+}
+
+void SortTableElementsByCountWgt::onNewestRepeatPrize()
+{
+    emit requestLatestRepeatPrize();
+}
+
+void SortTableElementsByCountWgt::markLatestRepeatPrize(const QList<quint8> &list)
+{
+    if (m_sparseData.isEmpty()) {
+        QMessageBox::information(this, QStringLiteral("提示"),
+                                 QStringLiteral("暂无数据，请先拉取数据"));
+        return;
+    }
+
+    int markedCount = 0;
+    for (SparseRow &sr : m_sparseData) {
+        if (sr.isSeparator) continue;
+        for (int col = 1; col <= 80; ++col) {
+            if (sr.prizes[col].prize != 0 && list.contains(sr.prizes[col].prize)) {
+                sr.prizes[col].isSelect = true;
+                sr.prizes[col].isDeleted = false;
+                markedCount++;
+            }
+        }
+    }
+
+    m_tableView->refreshModel();
+
+    if (markedCount > 0) {
+        QMessageBox::information(this, QStringLiteral("完成"),
+                                 QStringLiteral("已标记 %1 个最新重号").arg(markedCount));
+    }
 }

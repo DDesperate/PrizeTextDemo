@@ -909,6 +909,10 @@ Widget::Widget(QWidget *parent)
                                                       downTbv->outputNeighborData(),
                                                       downTbv->outputMixData());
             });
+            connect(sortTableElementsByCountWgt, &SortTableElementsByCountWgt::requestLatestRepeatPrize, this, [=]{
+                QList<quint8> list = upTbv->getLastRow();
+                sortTableElementsByCountWgt->markLatestRepeatPrize(list);
+            });
             sortTableElementsByCountWgt->setAttribute(Qt::WA_DeleteOnClose);
             sortTableElementsByCountWgt->show();
         }
