@@ -350,7 +350,7 @@ void SortDataDelegate::paintSparse(QPainter *painter, const QStyleOptionViewItem
 
     if (option.state & QStyle::State_Selected) {
         painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(51, 153, 255, 80));
+        painter->setBrush(QColor(234, 177, 255));
         painter->drawRect(rect);
     } else if (rowData.isSelected) {
         painter->setPen(Qt::NoPen);
@@ -447,7 +447,7 @@ void SortDataDelegate::paintOriginal(QPainter *painter, const QStyleOptionViewIt
 
     if (option.state & QStyle::State_Selected) {
         painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(51, 153, 255, 80));
+        painter->setBrush(QColor(234, 177, 255));
         painter->drawRect(rect);
     } else if (rowData.isSelected) {
         painter->setPen(Qt::NoPen);
