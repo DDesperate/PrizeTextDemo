@@ -173,6 +173,29 @@ void SortPrizeTableView::showContextMenu(const QPoint &pos)
         int effectiveStartRow = qMax(selStartRow, blockStart);
         int effectiveEndRow = qMin(selEndRow, blockEnd);
 
+        // 检查框选是否跨过横向红线（分隔行）
+        for (int i = selStartRow; i <= selEndRow; ++i) {
+            if ((*sparseDataVec)[i].isSeparator) {
+                QMessageBox::warning(nullptr, QStringLiteral("警告"),
+                                     QStringLiteral("框选区域跨过了红线，请重新选择"));
+                return;
+            }
+        }
+
+        // 检查框选是否跨过纵向红线
+        if (!m_blockDividers.isEmpty() && blockIndex < m_blockDividers.size()) {
+            const QVector<int> &dividers = m_blockDividers[blockIndex];
+            int selLeftCol = mainCol;
+            int selRightCol = mainCol + colSpan - 1;
+            for (int divCol : dividers) {
+                if (divCol > selLeftCol && divCol <= selRightCol) {
+                    QMessageBox::warning(nullptr, QStringLiteral("警告"),
+                                         QStringLiteral("框选区域跨过了红线，请重新选择"));
+                    return;
+                }
+            }
+        }
+
         // 将显示列映射到实际数字
         auto displayColToNumber = [&](int displayCol) -> int {
             if (!m_blockMappings.isEmpty() && blockIndex < m_blockMappings.size()) {
