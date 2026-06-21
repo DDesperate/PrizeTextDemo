@@ -282,6 +282,8 @@ void SortDataDelegate::paintSparse(QPainter *painter, const QStyleOptionViewItem
 
     if (index.column() == 0) {
         QColor bgColor = rowData.isSelected ? QColor(234, 177, 255) : QColor(135, 206, 235);
+        if (option.state & QStyle::State_Selected)
+            bgColor = QColor(51, 153, 255, 120);
         painter->setPen(Qt::NoPen);
         painter->setBrush(bgColor);
         painter->drawRect(rect);
@@ -323,7 +325,11 @@ void SortDataDelegate::paintSparse(QPainter *painter, const QStyleOptionViewItem
         return;
     }
 
-    if (rowData.isSelected) {
+    if (option.state & QStyle::State_Selected) {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(51, 153, 255, 80));
+        painter->drawRect(rect);
+    } else if (rowData.isSelected) {
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor(234, 177, 255));
         painter->drawRect(rect);
@@ -399,6 +405,8 @@ void SortDataDelegate::paintOriginal(QPainter *painter, const QStyleOptionViewIt
 
     if (index.column() == 0) {
         QColor bgColor = rowData.isSelected ? QColor(234, 177, 255) : QColor(135, 206, 235);
+        if (option.state & QStyle::State_Selected)
+            bgColor = QColor(51, 153, 255, 120);
         painter->setPen(Qt::NoPen);
         painter->setBrush(bgColor);
         painter->drawRect(rect);
@@ -414,7 +422,11 @@ void SortDataDelegate::paintOriginal(QPainter *painter, const QStyleOptionViewIt
         return;
     }
 
-    if (rowData.isSelected) {
+    if (option.state & QStyle::State_Selected) {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(51, 153, 255, 80));
+        painter->drawRect(rect);
+    } else if (rowData.isSelected) {
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor(234, 177, 255));
         painter->drawRect(rect);
