@@ -2,6 +2,8 @@
 #include <QClipboard>
 #include <QApplication>
 #include <QDebug>
+#include <QSet>
+#include <climits>
 
 // 构造函数：设置右键菜单策略并连接信号槽
 TableWithCopy::TableWithCopy(QWidget *parent) : QTableWidget(parent) {
@@ -30,15 +32,20 @@ void TableWithCopy::showContextMenu(const QPoint &pos) {
     // 添加“复制全部”操作到菜单
     contextMenu.addAction(&copyAllAction);
 
-    // 创建“复制选中列”操作(下述2行不能放到if语句中，否则失效)
+    // 创建”复制选中列”操作(下述2行不能放到if语句中，否则失效)
     QAction copySelectedColAction("复制选中列", this);
     connect(&copySelectedColAction, &QAction::triggered, this, &TableWithCopy::copySelectedCol);
 
-    //如果"开关"打开,那么此功能才生效
+    //如果”开关”打开,那么此功能才生效
     if(enableCopySelectedColumns == true){
-        // 添加“创建“复制选中列”操作”操作到菜单
+        // 添加”创建”复制选中列”操作”操作到菜单
         contextMenu.addAction(&copySelectedColAction);
     }
+
+    // 创建”复制选中项”操作
+    QAction copySelectedItemsAction("复制选中项", this);
+    connect(&copySelectedItemsAction, &QAction::triggered, this, &TableWithCopy::copySelectedItems);
+    contextMenu.addAction(&copySelectedItemsAction);
 
     // 显示菜单
     contextMenu.exec(mapToGlobal(pos));
@@ -90,6 +97,47 @@ void TableWithCopy::copySelectedCol()  {
     }
 
     // 将整个表格内容复制到剪贴板
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(copiedText);
+}
+
+void TableWithCopy::copySelectedItems() {
+    QItemSelectionModel *selection = selectionModel();
+    if (!selection || !selection->hasSelection()) return;
+
+    QModelIndexList selected = selection->selectedIndexes();
+    if (selected.isEmpty()) return;
+
+    // 找出选中区域的行列范围
+    int minRow = INT_MAX, maxRow = INT_MIN;
+    int minCol = INT_MAX, maxCol = INT_MIN;
+    for (const QModelIndex &idx : selected) {
+        minRow = qMin(minRow, idx.row());
+        maxRow = qMax(maxRow, idx.row());
+        minCol = qMin(minCol, idx.column());
+        maxCol = qMax(maxCol, idx.column());
+    }
+
+    // 构建 (row, col) -> QModelIndex 的映射
+    QSet<QPair<int,int>> selectedSet;
+    for (const QModelIndex &idx : selected) {
+        selectedSet.insert({idx.row(), idx.column()});
+    }
+
+    QString copiedText;
+    for (int row = minRow; row <= maxRow; ++row) {
+        QStringList rowData;
+        for (int col = minCol; col <= maxCol; ++col) {
+            if (selectedSet.contains({row, col})) {
+                QTableWidgetItem *item = this->item(row, col);
+                rowData << (item ? item->text() : "");
+            } else {
+                rowData << "";
+            }
+        }
+        copiedText += rowData.join(" ") + "\n";
+    }
+
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(copiedText);
 }

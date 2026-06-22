@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xxd \"C:/Users/zyu38/Desktop/github/PrizeTextDemo/HeAsked_branch4/tableWithCopy.cpp\")"
+    ]
+  }
+}

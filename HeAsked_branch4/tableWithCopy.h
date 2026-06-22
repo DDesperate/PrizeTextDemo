@@ -33,6 +33,7 @@ private slots:
     void showContextMenu(const QPoint &pos);
     void copyAllData();  // 复制全部数据
     void copySelectedCol();     //复制选中列数据
+    void copySelectedItems();   //复制选中项数据
     void getItemValueYellow(QTableWidgetItem* tbwgtit);
 
 
