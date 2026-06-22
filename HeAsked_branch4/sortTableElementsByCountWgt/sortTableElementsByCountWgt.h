@@ -10,6 +10,7 @@
 #include <QStyledItemDelegate>
 #include <QPushButton>
 #include <QSpinBox>
+#include "numLineEdit/numLineEdit.h"
 #include "przTbv/prizeTableView.h"
 #include "downTbv/downStruct.h"
 
@@ -130,6 +131,8 @@ private:
     QSpinBox *spinBox_randomMark;
     QPushButton *btnRandomMark;
     QPushButton *btnNewestRepeatPrize;
+    NumLineEdit *numLineEdit;
+    QPushButton *btnMark;
 
     // 每次拉取的三种模式数据
     struct GroupData {

@@ -520,17 +520,26 @@ void SortTableElementsByCountWgt::setupUI()
 
     QHBoxLayout *btnLayout = new QHBoxLayout();
     btnGroupByFreq = new QPushButton(QStringLiteral("按出现频率分组"), this);
+    btnGroupByFreq->setAutoDefault(false);
     btnUngroupFreq = new QPushButton(QStringLiteral("取消按照频率分组"), this);
+    btnUngroupFreq->setAutoDefault(false);
     btnModeRepeat = new QPushButton(QStringLiteral("重号模式"), this);
+    btnModeRepeat->setAutoDefault(false);
     btnModeNeighbor = new QPushButton(QStringLiteral("邻号模式"), this);
+    btnModeNeighbor->setAutoDefault(false);
     btnModeMix = new QPushButton(QStringLiteral("混合模式"), this);
+    btnModeMix->setAutoDefault(false);
     btnMoveSelectedLeft = new QPushButton(QStringLiteral("选中项靠边"), this);
+    btnMoveSelectedLeft->setAutoDefault(false);
     btnRestoreOrder = new QPushButton(QStringLiteral("靠边项还原"), this);
+    btnRestoreOrder->setAutoDefault(false);
     spinBox_randomMark = new QSpinBox(this);
     spinBox_randomMark->setRange(0, 20);
     spinBox_randomMark->setValue(10);
     btnRandomMark = new QPushButton(QStringLiteral("随机标记"), this);
+    btnRandomMark->setAutoDefault(false);
     btnNewestRepeatPrize = new QPushButton(QStringLiteral("最新重号"), this);
+    btnNewestRepeatPrize->setAutoDefault(false);
 
     btnLayout->addWidget(btnGroupByFreq);
     btnLayout->addWidget(btnUngroupFreq);
@@ -549,6 +558,15 @@ void SortTableElementsByCountWgt::setupUI()
     btnLayout->addWidget(btnNewestRepeatPrize);
     btnLayout->addStretch();
     layout->addLayout(btnLayout);
+
+    numLineEdit = new NumLineEdit(this);
+    btnMark = new QPushButton(QStringLiteral("标记"), this);
+    btnMark->setAutoDefault(false);
+    QHBoxLayout *numLineEditLayout = new QHBoxLayout();
+    numLineEditLayout->addWidget(numLineEdit);
+    numLineEditLayout->addWidget(btnMark);
+    numLineEditLayout->addStretch();
+    layout->addLayout(numLineEditLayout);
 
     m_tableView = new SortPrizeTableView(this);
     m_delegate = new SortDataDelegate();
