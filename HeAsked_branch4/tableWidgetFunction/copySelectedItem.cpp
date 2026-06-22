@@ -24,7 +24,7 @@ void Widget::copySelectedItem(QTableWidget *tbwgt)
             QTableWidgetItem* item = tbwgt->item(row, col);
             rowText << (item ? item->text() : "");
         }
-        clipboardText += rowText.join("\t") + "\n";
+        clipboardText += rowText.join(" ") + "\n";
     }
 
     // 将文本放入剪贴板
