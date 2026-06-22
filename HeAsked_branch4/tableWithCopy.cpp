@@ -22,32 +22,12 @@ TableWithCopy::TableWithCopy(QWidget *parent) : QTableWidget(parent) {
 
 // 显示右键菜单
 void TableWithCopy::showContextMenu(const QPoint &pos) {
-    // 创建上下文菜单
     QMenu contextMenu;
 
-    // 创建“复制全部”操作
-    QAction copyAllAction("复制全部", this);
-    connect(&copyAllAction, &QAction::triggered, this, &TableWithCopy::copyAllData);
-
-    // 添加“复制全部”操作到菜单
-    contextMenu.addAction(&copyAllAction);
-
-    // 创建”复制选中列”操作(下述2行不能放到if语句中，否则失效)
-    QAction copySelectedColAction("复制选中列", this);
-    connect(&copySelectedColAction, &QAction::triggered, this, &TableWithCopy::copySelectedCol);
-
-    //如果”开关”打开,那么此功能才生效
-    if(enableCopySelectedColumns == true){
-        // 添加”创建”复制选中列”操作”操作到菜单
-        contextMenu.addAction(&copySelectedColAction);
-    }
-
-    // 创建”复制选中项”操作
     QAction copySelectedItemsAction("复制选中项", this);
     connect(&copySelectedItemsAction, &QAction::triggered, this, &TableWithCopy::copySelectedItems);
     contextMenu.addAction(&copySelectedItemsAction);
 
-    // 显示菜单
     contextMenu.exec(mapToGlobal(pos));
 }
 
