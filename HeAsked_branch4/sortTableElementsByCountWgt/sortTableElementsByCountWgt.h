@@ -106,6 +106,8 @@ private slots:
     void onRandomMarkNumbers();
     void onNewestRepeatPrize();
     void onMarkNumbers();
+    void onClearSelect();
+    void onClearMark2();
 
 public:
     void markLatestRepeatPrize(const QList<quint8> &list);
@@ -132,6 +134,8 @@ private:
     QSpinBox *spinBox_randomMark;
     QPushButton *btnRandomMark;
     QPushButton *btnNewestRepeatPrize;
+    QPushButton *btnClearSelect;
+    QPushButton *btnClearMark2;
     NumLineEdit *numLineEdit;
     QPushButton *btnMark;
 

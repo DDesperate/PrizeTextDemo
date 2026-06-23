@@ -556,10 +556,14 @@ void SortTableElementsByCountWgt::setupUI()
     spinBox_randomMark = new QSpinBox(this);
     spinBox_randomMark->setRange(0, 20);
     spinBox_randomMark->setValue(10);
-    btnRandomMark = new QPushButton(QStringLiteral("随机标记"), this);
+    btnRandomMark = new QPushButton(QStringLiteral("随机标记(绿色)"), this);
     btnRandomMark->setAutoDefault(false);
-    btnNewestRepeatPrize = new QPushButton(QStringLiteral("最新重号"), this);
+    btnNewestRepeatPrize = new QPushButton(QStringLiteral("最新重号(绿色)"), this);
     btnNewestRepeatPrize->setAutoDefault(false);
+    btnClearSelect = new QPushButton(QStringLiteral("清除标记(绿色)"), this);
+    btnClearSelect->setAutoDefault(false);
+    btnClearMark2 = new QPushButton(QStringLiteral("清除标记(黄色)"), this);
+    btnClearMark2->setAutoDefault(false);
 
     btnLayout->addWidget(btnGroupByFreq);
     btnLayout->addWidget(btnUngroupFreq);
@@ -576,11 +580,13 @@ void SortTableElementsByCountWgt::setupUI()
     btnLayout->addWidget(new QLabel(QStringLiteral("个数字"), this));
     btnLayout->addWidget(btnRandomMark);
     btnLayout->addWidget(btnNewestRepeatPrize);
+    btnLayout->addWidget(btnClearSelect);
+    btnLayout->addWidget(btnClearMark2);
     btnLayout->addStretch();
     layout->addLayout(btnLayout);
 
     numLineEdit = new NumLineEdit(this);
-    btnMark = new QPushButton(QStringLiteral("标记"), this);
+    btnMark = new QPushButton(QStringLiteral("标记(黄色)"), this);
     btnMark->setAutoDefault(false);
     QHBoxLayout *numLineEditLayout = new QHBoxLayout();
     numLineEditLayout->addWidget(numLineEdit);
@@ -607,6 +613,8 @@ void SortTableElementsByCountWgt::setupUI()
     connect(btnRandomMark, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onRandomMarkNumbers);
     connect(btnNewestRepeatPrize, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onNewestRepeatPrize);
     connect(btnMark, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onMarkNumbers);
+    connect(btnClearSelect, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onClearSelect);
+    connect(btnClearMark2, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onClearMark2);
 }
 
 void SortTableElementsByCountWgt::rebuildSparseData()
@@ -966,15 +974,7 @@ void SortTableElementsByCountWgt::onRandomMarkNumbers()
         return;
     }
 
-    // 1. 清除所有已有的选中状态
-    for (SparseRow &sr : m_sparseData) {
-        for (int col = 1; col <= 80; ++col) {
-            sr.prizes[col].isSelect = false;
-            sr.prizes[col].isMark2 = false;
-        }
-    }
-
-    // 2. 随机选择n个不重复的数字(1-80)
+    // 1. 随机选择n个不重复的数字(1-80)
     QByteArray seedData = QByteArray::number(QDateTime::currentMSecsSinceEpoch());
     QRandomGenerator gen(seedData.toULongLong());
     QSet<int> numbersToMark;
@@ -982,7 +982,7 @@ void SortTableElementsByCountWgt::onRandomMarkNumbers()
         numbersToMark.insert(gen.bounded(1, 81));
     }
 
-    // 3. 在所有行中，将这n个数字标记为选中
+    // 2. 在所有行中，将这n个数字标记为选中
     int markedCount = 0;
     for (SparseRow &sr : m_sparseData) {
         if (sr.isSeparator) continue;
@@ -1015,8 +1015,6 @@ void SortTableElementsByCountWgt::markLatestRepeatPrize(const QList<quint8> &lis
     for (SparseRow &sr : m_sparseData) {
         if (sr.isSeparator) continue;
         for (int col = 1; col <= 80; ++col) {
-            sr.prizes[col].isSelect = false;
-            sr.prizes[col].isMark2 = false;
             if (sr.prizes[col].prize != 0 && list.contains(sr.prizes[col].prize)) {
                 sr.prizes[col].isSelect = true;
                 sr.prizes[col].isDeleted = false;
@@ -1063,4 +1061,50 @@ void SortTableElementsByCountWgt::onMarkNumbers()
 
     QMessageBox::information(this, QStringLiteral("完成"),
                              QStringLiteral("已标记 %1 项").arg(markedCount));
+}
+
+void SortTableElementsByCountWgt::onClearSelect()
+{
+    if (m_sparseData.isEmpty()) return;
+
+    int cleared = 0;
+    for (SparseRow &sr : m_sparseData) {
+        if (sr.isSeparator) continue;
+        for (int col = 1; col <= 80; ++col) {
+            if (sr.prizes[col].isSelect) {
+                sr.prizes[col].isSelect = false;
+                cleared++;
+            }
+        }
+    }
+
+    m_tableView->refreshModel();
+
+    if (cleared > 0) {
+        QMessageBox::information(this, QStringLiteral("完成"),
+                                 QStringLiteral("已清除 %1 个绿色标记").arg(cleared));
+    }
+}
+
+void SortTableElementsByCountWgt::onClearMark2()
+{
+    if (m_sparseData.isEmpty()) return;
+
+    int cleared = 0;
+    for (SparseRow &sr : m_sparseData) {
+        if (sr.isSeparator) continue;
+        for (int col = 1; col <= 80; ++col) {
+            if (sr.prizes[col].isMark2) {
+                sr.prizes[col].isMark2 = false;
+                cleared++;
+            }
+        }
+    }
+
+    m_tableView->refreshModel();
+
+    if (cleared > 0) {
+        QMessageBox::information(this, QStringLiteral("完成"),
+                                 QStringLiteral("已清除 %1 个黄色标记").arg(cleared));
+    }
 }
