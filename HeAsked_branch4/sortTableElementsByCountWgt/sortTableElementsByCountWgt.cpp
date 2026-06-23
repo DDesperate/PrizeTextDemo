@@ -385,11 +385,27 @@ void SortDataDelegate::paintSparse(QPainter *painter, const QStyleOptionViewItem
             painter->drawLine(QPoint(rect.left() + 2, rect.top() + 2),
                               QPoint(rect.right() - 2, rect.bottom() - 2));
             painter->setPen(QColor(100, 100, 100));
+        } else if (prizeInfo.isSelect && prizeInfo.isMark2) {
+            QFont font("Arial", radius * 1.0);
+            font.setBold(true);
+            painter->setFont(font);
+            painter->setPen(QColor(255, 140, 0));
+            painter->drawText(rect, Qt::AlignCenter, QString::number(value).rightJustified(2, '0'));
+            painter->restore();
+            return;
         } else if (prizeInfo.isSelect) {
             painter->setPen(QPen(QColor(0, 100, 0), 2));
             painter->setBrush(QColor(0, 200, 0));
             painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
             painter->setPen(Qt::white);
+        } else if (prizeInfo.isMark2) {
+            QFont font("Arial", radius * 1.0);
+            font.setBold(true);
+            painter->setFont(font);
+            painter->setPen(Qt::yellow);
+            painter->drawText(rect, Qt::AlignCenter, QString::number(value).rightJustified(2, '0'));
+            painter->restore();
+            return;
         } else {
             painter->setPen(QPen(Qt::black, 2));
             painter->setBrush(prizeInfo.color);
@@ -478,11 +494,27 @@ void SortDataDelegate::paintOriginal(QPainter *painter, const QStyleOptionViewIt
             painter->drawLine(QPoint(rect.left() + 2, rect.top() + 2),
                               QPoint(rect.right() - 2, rect.bottom() - 2));
             painter->setPen(QColor(100, 100, 100));
+        } else if (prizeInfo->isSelect && prizeInfo->isMark2) {
+            QFont font("Arial", radius * 1.0);
+            font.setBold(true);
+            painter->setFont(font);
+            painter->setPen(QColor(255, 140, 0));
+            painter->drawText(rect, Qt::AlignCenter, QString::number(value).rightJustified(2, '0'));
+            painter->restore();
+            return;
         } else if (prizeInfo->isSelect) {
             painter->setPen(QPen(QColor(0, 100, 0), 2));
             painter->setBrush(QColor(0, 200, 0));
             painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
             painter->setPen(Qt::white);
+        } else if (prizeInfo->isMark2) {
+            QFont font("Arial", radius * 1.0);
+            font.setBold(true);
+            painter->setFont(font);
+            painter->setPen(Qt::yellow);
+            painter->drawText(rect, Qt::AlignCenter, QString::number(value).rightJustified(2, '0'));
+            painter->restore();
+            return;
         } else {
             painter->setPen(QPen(Qt::black, 2));
             painter->setBrush(prizeInfo->color);
@@ -586,6 +618,7 @@ void SortTableElementsByCountWgt::setupUI()
     connect(btnRestoreOrder, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onRestoreSelectedOrder);
     connect(btnRandomMark, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onRandomMarkNumbers);
     connect(btnNewestRepeatPrize, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onNewestRepeatPrize);
+    connect(btnMark, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onMarkNumbers);
 }
 
 void SortTableElementsByCountWgt::rebuildSparseData()
@@ -949,6 +982,7 @@ void SortTableElementsByCountWgt::onRandomMarkNumbers()
     for (SparseRow &sr : m_sparseData) {
         for (int col = 1; col <= 80; ++col) {
             sr.prizes[col].isSelect = false;
+            sr.prizes[col].isMark2 = false;
         }
     }
 
@@ -994,6 +1028,7 @@ void SortTableElementsByCountWgt::markLatestRepeatPrize(const QList<quint8> &lis
         if (sr.isSeparator) continue;
         for (int col = 1; col <= 80; ++col) {
             sr.prizes[col].isSelect = false;
+            sr.prizes[col].isMark2 = false;
             if (sr.prizes[col].prize != 0 && list.contains(sr.prizes[col].prize)) {
                 sr.prizes[col].isSelect = true;
                 sr.prizes[col].isDeleted = false;
@@ -1008,4 +1043,36 @@ void SortTableElementsByCountWgt::markLatestRepeatPrize(const QList<quint8> &lis
         QMessageBox::information(this, QStringLiteral("完成"),
                                  QStringLiteral("已标记 %1 个最新重号").arg(markedCount));
     }
+}
+
+void SortTableElementsByCountWgt::onMarkNumbers()
+{
+    if (m_sparseData.isEmpty()) {
+        QMessageBox::information(this, QStringLiteral("提示"),
+                                 QStringLiteral("暂无数据，请先拉取数据"));
+        return;
+    }
+
+    QList<quint8> numbers = numLineEdit->strToList();
+    if (numbers.isEmpty()) {
+        QMessageBox::warning(nullptr, QStringLiteral("警告"),
+                             QStringLiteral("请输入要标记的数字"));
+        return;
+    }
+
+    int markedCount = 0;
+    for (SparseRow &sr : m_sparseData) {
+        if (sr.isSeparator) continue;
+        for (int col = 1; col <= 80; ++col) {
+            if (sr.prizes[col].prize != 0 && numbers.contains(sr.prizes[col].prize)) {
+                sr.prizes[col].setMark2(true);
+                markedCount++;
+            }
+        }
+    }
+
+    m_tableView->refreshModel();
+
+    QMessageBox::information(this, QStringLiteral("完成"),
+                             QStringLiteral("已标记 %1 项").arg(markedCount));
 }

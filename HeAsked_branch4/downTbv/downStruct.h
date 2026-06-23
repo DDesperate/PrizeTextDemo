@@ -10,6 +10,7 @@ typedef struct {
     quint8 prize;
     bool isSelect;
     bool isDeleted;
+    bool isMark2;
 
     void setSelected(){
         //只有该项没有被划掉时才能被选中
@@ -28,6 +29,14 @@ typedef struct {
         isDeleted = value;
         if (isDeleted) {
             isSelect = false;
+            isMark2 = false;
+        }
+    }
+
+    void setMark2(bool value) {
+        isMark2 = value;
+        if (isMark2) {
+            isDeleted = false;
         }
     }
 

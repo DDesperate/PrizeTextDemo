@@ -27,7 +27,7 @@ void DownTableView::insertRow(const QString &date,const QList<quint8> &prizes)
     foreach(auto value,prizes)
     {
         dbsign1.append(value);
-        slcInfo info{QColor(49,102,204),value,false,false};
+        slcInfo info{QColor(49,102,204),value,false,false,false};
         selectDataTableRow.append(info);
         if(value>0&&value<81){
             nbsign1.append(value+1);

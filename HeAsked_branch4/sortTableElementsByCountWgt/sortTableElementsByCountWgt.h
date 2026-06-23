@@ -105,6 +105,7 @@ private slots:
     void onRestoreSelectedOrder();
     void onRandomMarkNumbers();
     void onNewestRepeatPrize();
+    void onMarkNumbers();
 
 public:
     void markLatestRepeatPrize(const QList<quint8> &list);
