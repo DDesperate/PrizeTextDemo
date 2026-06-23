@@ -564,7 +564,11 @@ void SortTableElementsByCountWgt::setupUI()
     btnClearSelect->setAutoDefault(false);
     btnClearMark2 = new QPushButton(QStringLiteral("清除标记(黄色)"), this);
     btnClearMark2->setAutoDefault(false);
+    btnClearTable = new QPushButton(QStringLiteral("清空表格"), this);
+    btnClearTable->setAutoDefault(false);
+    btnClearTable->setStyleSheet("background-color: red; color: black;");
 
+    btnLayout->addWidget(btnClearTable);
     btnLayout->addWidget(btnGroupByFreq);
     btnLayout->addWidget(btnUngroupFreq);
     btnLayout->addSpacing(20);
@@ -581,7 +585,6 @@ void SortTableElementsByCountWgt::setupUI()
     btnLayout->addWidget(btnRandomMark);
     btnLayout->addWidget(btnNewestRepeatPrize);
     btnLayout->addWidget(btnClearSelect);
-    btnLayout->addWidget(btnClearMark2);
     btnLayout->addStretch();
     layout->addLayout(btnLayout);
 
@@ -591,6 +594,7 @@ void SortTableElementsByCountWgt::setupUI()
     QHBoxLayout *numLineEditLayout = new QHBoxLayout();
     numLineEditLayout->addWidget(numLineEdit);
     numLineEditLayout->addWidget(btnMark);
+    numLineEditLayout->addWidget(btnClearMark2);
     numLineEditLayout->addStretch();
     layout->addLayout(numLineEditLayout);
 
@@ -615,6 +619,7 @@ void SortTableElementsByCountWgt::setupUI()
     connect(btnMark, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onMarkNumbers);
     connect(btnClearSelect, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onClearSelect);
     connect(btnClearMark2, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onClearMark2);
+    connect(btnClearTable, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onClearTable);
 }
 
 void SortTableElementsByCountWgt::rebuildSparseData()
@@ -1107,4 +1112,18 @@ void SortTableElementsByCountWgt::onClearMark2()
         QMessageBox::information(this, QStringLiteral("完成"),
                                  QStringLiteral("已清除 %1 个黄色标记").arg(cleared));
     }
+}
+
+void SortTableElementsByCountWgt::onClearTable()
+{
+    m_sparseData.clear();
+    m_groups.clear();
+    m_isGroupedByFreq = false;
+    m_originalBlockMappings.clear();
+    m_blockDividers.clear();
+    m_delegate->setBlockColumnMappings(QVector<QVector<int>>());
+    m_delegate->setBlockColumnDividers(QVector<QVector<int>>());
+    m_tableView->setBlockColumnMappings(QVector<QVector<int>>());
+    m_tableView->setBlockColumnDividers(QVector<QVector<int>>());
+    m_tableView->refreshModel();
 }
