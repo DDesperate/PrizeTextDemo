@@ -397,7 +397,7 @@ void SortDataDelegate::paintSparse(QPainter *painter, const QStyleOptionViewItem
             painter->setPen(Qt::white);
         } else if (prizeInfo.isMark2) {
             painter->setPen(QPen(QColor(150, 150, 0), 2));
-            painter->setBrush(Qt::yellow);
+            painter->setBrush(QColor(230, 190, 0));
             painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
             painter->setPen(Qt::white);
         } else {
@@ -500,7 +500,7 @@ void SortDataDelegate::paintOriginal(QPainter *painter, const QStyleOptionViewIt
             painter->setPen(Qt::white);
         } else if (prizeInfo->isMark2) {
             painter->setPen(QPen(QColor(150, 150, 0), 2));
-            painter->setBrush(Qt::yellow);
+            painter->setBrush(QColor(230, 190, 0));
             painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
             painter->setPen(Qt::white);
         } else {
