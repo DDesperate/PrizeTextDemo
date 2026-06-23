@@ -386,26 +386,20 @@ void SortDataDelegate::paintSparse(QPainter *painter, const QStyleOptionViewItem
                               QPoint(rect.right() - 2, rect.bottom() - 2));
             painter->setPen(QColor(100, 100, 100));
         } else if (prizeInfo.isSelect && prizeInfo.isMark2) {
-            QFont font("Arial", radius * 1.0);
-            font.setBold(true);
-            painter->setFont(font);
-            painter->setPen(QColor(255, 140, 0));
-            painter->drawText(rect, Qt::AlignCenter, QString::number(value).rightJustified(2, '0'));
-            painter->restore();
-            return;
+            painter->setPen(QPen(QColor(180, 80, 0), 2));
+            painter->setBrush(QColor(255, 140, 0));
+            painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
+            painter->setPen(Qt::white);
         } else if (prizeInfo.isSelect) {
             painter->setPen(QPen(QColor(0, 100, 0), 2));
             painter->setBrush(QColor(0, 200, 0));
             painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
             painter->setPen(Qt::white);
         } else if (prizeInfo.isMark2) {
-            QFont font("Arial", radius * 1.0);
-            font.setBold(true);
-            painter->setFont(font);
-            painter->setPen(Qt::yellow);
-            painter->drawText(rect, Qt::AlignCenter, QString::number(value).rightJustified(2, '0'));
-            painter->restore();
-            return;
+            painter->setPen(QPen(QColor(150, 150, 0), 2));
+            painter->setBrush(Qt::yellow);
+            painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
+            painter->setPen(Qt::white);
         } else {
             painter->setPen(QPen(Qt::black, 2));
             painter->setBrush(prizeInfo.color);
@@ -495,26 +489,20 @@ void SortDataDelegate::paintOriginal(QPainter *painter, const QStyleOptionViewIt
                               QPoint(rect.right() - 2, rect.bottom() - 2));
             painter->setPen(QColor(100, 100, 100));
         } else if (prizeInfo->isSelect && prizeInfo->isMark2) {
-            QFont font("Arial", radius * 1.0);
-            font.setBold(true);
-            painter->setFont(font);
-            painter->setPen(QColor(255, 140, 0));
-            painter->drawText(rect, Qt::AlignCenter, QString::number(value).rightJustified(2, '0'));
-            painter->restore();
-            return;
+            painter->setPen(QPen(QColor(180, 80, 0), 2));
+            painter->setBrush(QColor(255, 140, 0));
+            painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
+            painter->setPen(Qt::white);
         } else if (prizeInfo->isSelect) {
             painter->setPen(QPen(QColor(0, 100, 0), 2));
             painter->setBrush(QColor(0, 200, 0));
             painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
             painter->setPen(Qt::white);
         } else if (prizeInfo->isMark2) {
-            QFont font("Arial", radius * 1.0);
-            font.setBold(true);
-            painter->setFont(font);
-            painter->setPen(Qt::yellow);
-            painter->drawText(rect, Qt::AlignCenter, QString::number(value).rightJustified(2, '0'));
-            painter->restore();
-            return;
+            painter->setPen(QPen(QColor(150, 150, 0), 2));
+            painter->setBrush(Qt::yellow);
+            painter->drawEllipse(centerX - radius, centerY - radius, radius * 2, radius * 2);
+            painter->setPen(Qt::white);
         } else {
             painter->setPen(QPen(Qt::black, 2));
             painter->setBrush(prizeInfo->color);
