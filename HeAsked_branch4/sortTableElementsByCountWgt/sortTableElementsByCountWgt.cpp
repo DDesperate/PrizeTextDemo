@@ -226,7 +226,55 @@ void SortPrizeTableView::showContextMenu(const QPoint &pos)
         clipboard->setText(clipboardText);
     });
 
-    contextMenu.addAction(&copySelectAction);
+    //contextMenu.addAction(&copySelectAction);
+
+    QAction copySelectCrossAction(QStringLiteral("复制选中区域(跨区域)"), this);
+    connect(&copySelectCrossAction, &QAction::triggered, this, [=]{
+        int mainRow, mainCol, rowSpan, colSpan;
+        if (!getSelectedRectInfo(this, mainRow, mainCol, rowSpan, colSpan))
+            return;
+
+        int selStartRow = mainRow - 1;
+        int selEndRow = selStartRow + rowSpan - 1;
+
+        QString clipboardText;
+        for (int row = selStartRow; row <= selEndRow; ++row) {
+            const SparseRow &sr = (*sparseDataVec)[row];
+            if (sr.isSeparator)
+                continue;
+
+            int bi = 0;
+            for (int i = 0; i < row; ++i) {
+                if ((*sparseDataVec)[i].isSeparator)
+                    bi++;
+            }
+
+            auto displayColToNumber = [&](int displayCol) -> int {
+                if (!m_blockMappings.isEmpty() && bi < m_blockMappings.size()) {
+                    const QVector<int> &mapping = m_blockMappings[bi];
+                    if (mapping.size() >= 80 && displayCol >= 1 && displayCol <= 80)
+                        return mapping[displayCol - 1];
+                }
+                return displayCol;
+            };
+
+            QSet<int> selectedNumbers;
+            for (int c = mainCol; c < mainCol + colSpan; ++c)
+                selectedNumbers.insert(displayColToNumber(c));
+
+            for (int col = 1; col <= 80; ++col) {
+                const slcInfo &info = sr.prizes[col];
+                if (info.prize != 0 && !info.isDeleted && selectedNumbers.contains(col))
+                    clipboardText += QString("%1 ").arg(info.prize, 2, 10, QChar('0'));
+            }
+            clipboardText += "\n";
+        }
+
+        QClipboard *clipboard = QApplication::clipboard();
+        clipboard->setText(clipboardText);
+    });
+    contextMenu.addAction(&copySelectCrossAction);
+
     contextMenu.exec(mapToGlobal(pos));
 }
 
