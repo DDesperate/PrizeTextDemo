@@ -327,6 +327,7 @@ private:
     QPushButton *filter_btn;
     QSpinBox *filter_spinBox;
     QPlainTextEdit *combine_Res;
+    QVector<QList<quint8>> combine_res_data;
     //暂时存放被复制的数据的数据结构
     //QVector<QList<quint8>> tmp_L_data;
     //QVector<QList<quint8>> tmp_R_data;

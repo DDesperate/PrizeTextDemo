@@ -622,6 +622,8 @@ Widget::Widget(QWidget *parent)
         //排序
         std::sort(res.begin(), res.end(), customSort);
 
+        combine_res_data = res;
+
 
 
 //        for (const QList<quint8>& row : res) {
@@ -637,6 +639,34 @@ Widget::Widget(QWidget *parent)
         combine_Res->setPlainText(rowCount+formatQVectorQListToString(res));
 
 
+    });
+
+    connect(filter_btn,&QPushButton::clicked,[=]{
+        int num = filter_spinBox->value();
+        QVector<QList<quint8>> filtered;
+        for(const QList<quint8>& row : combine_res_data)
+        {
+            if(row.size() == num)
+                filtered.append(row);
+        }
+
+        if(filtered.isEmpty())
+        {
+            QMessageBox::warning(nullptr, tr("警告"), tr("没有符合的结果"));
+            return;
+        }
+
+        QDialog *dlg = new QDialog(this);
+        dlg->setWindowTitle(tr("筛选结果 — %1个元素").arg(num));
+        QVBoxLayout *lay = new QVBoxLayout(dlg);
+        QPlainTextEdit *pte = new QPlainTextEdit(dlg);
+        pte->setReadOnly(true);
+        QString rowCount = "总行数:" + QString::number(filtered.size()) + "\n";
+        pte->setPlainText(rowCount + formatQVectorQListToString(filtered));
+        lay->addWidget(pte);
+        dlg->setLayout(lay);
+        dlg->setAttribute(Qt::WA_DeleteOnClose);
+        dlg->show();
     });
 
     //把左表dataTable中的数据前n行放到dataTable_randomshuffling当中
