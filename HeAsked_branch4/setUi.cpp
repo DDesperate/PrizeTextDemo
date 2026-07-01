@@ -468,7 +468,14 @@ void Widget::setUi(QWidget* widget)
     //复制数据部分
     layV_combine_selfSelectCombine = new QVBoxLayout(selfSelectCombine);
     //组合部分
+    layH_combineBtn_selfSelectCombine = new QHBoxLayout(selfSelectCombine);
     combine_btn = new QPushButton("组合",selfSelectCombine);
+    filter_btn = new QPushButton("筛选",selfSelectCombine);
+    filter_spinBox = new QSpinBox(selfSelectCombine);
+    layH_combineBtn_selfSelectCombine->addWidget(combine_btn);
+    layH_combineBtn_selfSelectCombine->addWidget(filter_btn);
+    layH_combineBtn_selfSelectCombine->addWidget(filter_spinBox);
+    layH_combineBtn_selfSelectCombine->addStretch();
     combine_Res = new QPlainTextEdit(selfSelectCombine);
     combine_Res->setReadOnly(true);
 
@@ -492,7 +499,7 @@ void Widget::setUi(QWidget* widget)
     //复制数据部分
     layV_selfSelectCombine->addLayout(layV_combine_selfSelectCombine);
     //组合部分
-    layV_selfSelectCombine->addWidget(combine_btn);
+    layV_selfSelectCombine->addLayout(layH_combineBtn_selfSelectCombine);
     layV_selfSelectCombine->addWidget(combine_Res);
 
     tabWidget->addTab(selfSelectCombine, QString("自选组合"));

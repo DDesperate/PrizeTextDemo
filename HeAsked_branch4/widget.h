@@ -322,7 +322,10 @@ private:
     //复制数据部分
     QVBoxLayout *layV_combine_selfSelectCombine;
     //组合部分
+    QHBoxLayout *layH_combineBtn_selfSelectCombine;
     QPushButton *combine_btn;
+    QPushButton *filter_btn;
+    QSpinBox *filter_spinBox;
     QPlainTextEdit *combine_Res;
     //暂时存放被复制的数据的数据结构
     //QVector<QList<quint8>> tmp_L_data;
