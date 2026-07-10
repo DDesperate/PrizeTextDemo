@@ -187,16 +187,16 @@ QPair<int,QString> TwoStepVerificationWgt::textToDataStructure(QVector<QList<qui
 }
 
 //用于仅复制奖注，不复制其他信息
-//处理比较草率
-//获取文本，去除第一行，去除每一行的后7个字符
 void TwoStepVerificationWgt::copy_onlyPrize(const QString &text)
 {
     QStringList lines = text.split('\n');
     lines.removeFirst();
     for (int i = 0; i < lines.size(); ++i) {
         QString trimmedLine = lines[i].trimmed();
-        QString truncatedLine = trimmedLine.mid(0, trimmedLine.length() - 7);
-        lines[i] = truncatedLine;
+        int position = trimmedLine.indexOf("出现次数");
+        if (position != -1) {
+            lines[i] = trimmedLine.left(position).trimmed();
+        }
     }
     QString modifiedString = lines.join('\n');
     QApplication::clipboard()->setText(modifiedString);
