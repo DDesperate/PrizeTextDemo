@@ -301,10 +301,7 @@ void copy_onlyPrize(const QString &text,QString mark)
         QString trimmedLine = lines[i].trimmed();
         int position = trimmedLine.indexOf(mark);
         if (position != -1) {
-            QString truncatedLine = trimmedLine.left(position);
-            lines[i] = truncatedLine;
-        } else {
-            // 如果没有找到" 出现次数"字符，则保持原字符串不变或按需处理
+            lines[i] = trimmedLine.left(position).trimmed();
         }
     }
 

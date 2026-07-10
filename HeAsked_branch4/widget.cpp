@@ -547,12 +547,12 @@ Widget::Widget(QWidget *parent)
 
     //复制不带计数(带条件)
     connect(copy_condition,&QPushButton::clicked,[=]{
-        copy_onlyPrize(compare_condition_text->toPlainText()," 出现次数");
+        copy_onlyPrize(compare_condition_text->toPlainText(),"出现次数");
     });
 
     //复制
     connect(copy,&QPushButton::clicked,[=]{
-        copy_onlyPrize(compare_text->toPlainText()," 出现次数");
+        copy_onlyPrize(compare_text->toPlainText(),"出现次数");
     });
 
     //二次比较
@@ -907,7 +907,7 @@ Widget::Widget(QWidget *parent)
         //QClipboard *clipboard = QApplication::clipboard();
         //clipboard->setText(tab_NumberExclusion_plainText_res->toPlainText());
         QApplication::clipboard()->setText(tab_NumberExclusion_plainText_res->toPlainText());
-        copy_onlyPrize(tab_NumberExclusion_plainText_res->toPlainText()," 元素个数");
+        copy_onlyPrize(tab_NumberExclusion_plainText_res->toPlainText(),"元素个数");
     });
 
 
