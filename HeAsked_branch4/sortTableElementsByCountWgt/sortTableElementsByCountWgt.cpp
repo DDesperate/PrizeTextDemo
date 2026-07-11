@@ -230,48 +230,59 @@ void SortPrizeTableView::showContextMenu(const QPoint &pos)
 
     QAction copySelectCrossAction(QStringLiteral("复制选中区域(跨区域)"), this);
     connect(&copySelectCrossAction, &QAction::triggered, this, [=]{
-        int mainRow, mainCol, rowSpan, colSpan;
-        if (!getSelectedRectInfo(this, mainRow, mainCol, rowSpan, colSpan))
+        if (!selectionModel() || selectionModel()->selection().isEmpty())
             return;
 
-        int selStartRow = mainRow - 1;
-        int selEndRow = selStartRow + rowSpan - 1;
+        const QItemSelection &sel = selectionModel()->selection();
+        QStringList rangeTexts;
 
-        QString clipboardText;
-        for (int row = selStartRow; row <= selEndRow; ++row) {
-            const SparseRow &sr = (*sparseDataVec)[row];
-            if (sr.isSeparator)
-                continue;
+        for (const QItemSelectionRange &range : sel) {
+            int selStartRow = range.top();
+            int selEndRow = range.bottom();
+            int selLeftCol = range.left();
+            int selRightCol = range.right();
 
-            int bi = 0;
-            for (int i = 0; i < row; ++i) {
-                if ((*sparseDataVec)[i].isSeparator)
-                    bi++;
-            }
+            QString rangeText;
+            for (int row = selStartRow; row <= selEndRow; ++row) {
+                const SparseRow &sr = (*sparseDataVec)[row];
+                if (sr.isSeparator)
+                    continue;
 
-            auto displayColToNumber = [&](int displayCol) -> int {
-                if (!m_blockMappings.isEmpty() && bi < m_blockMappings.size()) {
-                    const QVector<int> &mapping = m_blockMappings[bi];
-                    if (mapping.size() >= 80 && displayCol >= 1 && displayCol <= 80)
-                        return mapping[displayCol - 1];
+                int bi = 0;
+                for (int i = 0; i < row; ++i) {
+                    if ((*sparseDataVec)[i].isSeparator)
+                        bi++;
                 }
-                return displayCol;
-            };
 
-            QSet<int> selectedNumbers;
-            for (int c = mainCol; c < mainCol + colSpan; ++c)
-                selectedNumbers.insert(displayColToNumber(c));
+                auto displayColToNumber = [&](int displayCol) -> int {
+                    if (!m_blockMappings.isEmpty() && bi < m_blockMappings.size()) {
+                        const QVector<int> &mapping = m_blockMappings[bi];
+                        if (mapping.size() >= 80 && displayCol >= 1 && displayCol <= 80)
+                            return mapping[displayCol - 1];
+                    }
+                    return displayCol;
+                };
 
-            for (int col = 1; col <= 80; ++col) {
-                const slcInfo &info = sr.prizes[col];
-                if (info.prize != 0 && !info.isDeleted && selectedNumbers.contains(col))
-                    clipboardText += QString("%1 ").arg(info.prize, 2, 10, QChar('0'));
+                QSet<int> selectedNumbers;
+                for (int c = selLeftCol; c <= selRightCol; ++c)
+                    selectedNumbers.insert(displayColToNumber(c));
+
+                QString lineText;
+                for (int col = 1; col <= 80; ++col) {
+                    const slcInfo &info = sr.prizes[col];
+                    if (info.prize != 0 && !info.isDeleted && selectedNumbers.contains(col))
+                        lineText += QString("%1 ").arg(info.prize, 2, 10, QChar('0'));
+                }
+                if (!lineText.isEmpty())
+                    rangeText += lineText + "\n";
             }
-            clipboardText += "\n";
+
+            if (!rangeText.isEmpty())
+                rangeTexts << rangeText;
         }
 
         QClipboard *clipboard = QApplication::clipboard();
-        clipboard->setText(clipboardText);
+        clipboard->setText(rangeTexts.join("\n"));
     });
     contextMenu.addAction(&copySelectCrossAction);
 
