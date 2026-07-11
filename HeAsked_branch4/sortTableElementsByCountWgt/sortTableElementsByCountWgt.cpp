@@ -140,55 +140,40 @@ void SortPrizeTableView::showContextMenu(const QPoint &pos)
     QAction copySelectAction(QStringLiteral("复制选中区域"), this);
 
     connect(&copySelectAction, &QAction::triggered, this, [=]{
-        int mainRow, mainCol, rowSpan, colSpan;
-        if (!getSelectedRectInfo(this, mainRow, mainCol, rowSpan, colSpan))
+        QModelIndexList selectedIndexes = this->selectionModel()->selectedIndexes();
+        if (selectedIndexes.isEmpty())
             return;
 
-        int selStartRow = mainRow - 1;
-        int selEndRow = selStartRow + rowSpan - 1;
-
-        // 找到选中区域所在的数据块范围（不允许跨分隔行）
-        int blockStart = selStartRow;
-        int blockEnd = selEndRow;
-        int blockIndex = 0;
-        for (int i = selStartRow; i <= selEndRow; ++i) {
-            if ((*sparseDataVec)[i].isSeparator) {
-                blockEnd = i - 1;
-                break;
-            }
-        }
-        for (int i = selStartRow; i >= 0; --i) {
-            if ((*sparseDataVec)[i].isSeparator) {
-                blockStart = i + 1;
-                break;
-            }
-        }
-        // 计算blockIndex
-        for (int i = 0; i < blockStart; ++i) {
-            if ((*sparseDataVec)[i].isSeparator)
-                blockIndex++;
+        // 从实际选中的索引收集行号和列号
+        QSet<int> selectedRows;
+        QSet<int> selectedDisplayCols;
+        for (const QModelIndex &idx : selectedIndexes) {
+            selectedRows.insert(idx.row());
+            selectedDisplayCols.insert(idx.column());
         }
 
-        // 限制到当前块范围
-        int effectiveStartRow = qMax(selStartRow, blockStart);
-        int effectiveEndRow = qMin(selEndRow, blockEnd);
-
-        // 检查框选是否跨过横向红线（分隔行）
-        for (int i = selStartRow; i <= selEndRow; ++i) {
-            if ((*sparseDataVec)[i].isSeparator) {
+        // 检查是否跨过横向红线
+        for (int row : selectedRows) {
+            if ((*sparseDataVec)[row].isSeparator) {
                 QMessageBox::warning(nullptr, QStringLiteral("警告"),
                                      QStringLiteral("框选区域跨过了红线，请重新选择"));
                 return;
             }
         }
 
-        // 检查框选是否跨过纵向红线
+        // 计算blockIndex（取最小行的block）
+        int minRow = *std::min_element(selectedRows.begin(), selectedRows.end());
+        int blockIndex = 0;
+        for (int i = 0; i < minRow; ++i) {
+            if ((*sparseDataVec)[i].isSeparator)
+                blockIndex++;
+        }
+
+        // 检查是否跨过纵向红线
         if (!m_blockDividers.isEmpty() && blockIndex < m_blockDividers.size()) {
             const QVector<int> &dividers = m_blockDividers[blockIndex];
-            int selLeftCol = mainCol;
-            int selRightCol = mainCol + colSpan - 1;
             for (int divCol : dividers) {
-                if (divCol > selLeftCol && divCol <= selRightCol) {
+                if (selectedDisplayCols.contains(divCol)) {
                     QMessageBox::warning(nullptr, QStringLiteral("警告"),
                                          QStringLiteral("框选区域跨过了红线，请重新选择"));
                     return;
@@ -207,12 +192,16 @@ void SortPrizeTableView::showContextMenu(const QPoint &pos)
         };
 
         QSet<int> selectedNumbers;
-        for (int c = mainCol; c < mainCol + colSpan; ++c) {
+        for (int c : selectedDisplayCols) {
             selectedNumbers.insert(displayColToNumber(c));
         }
 
+        // 按行号排序，保证输出顺序
+        QList<int> sortedRows = selectedRows.values();
+        std::sort(sortedRows.begin(), sortedRows.end());
+
         QString clipboardText;
-        for (int row = effectiveStartRow; row <= effectiveEndRow; ++row) {
+        for (int row : sortedRows) {
             const SparseRow &sr = (*sparseDataVec)[row];
             for (int col = 1; col <= 80; ++col) {
                 const slcInfo &info = sr.prizes[col];
@@ -230,15 +219,24 @@ void SortPrizeTableView::showContextMenu(const QPoint &pos)
 
     QAction copySelectCrossAction(QStringLiteral("复制选中区域(跨区域)"), this);
     connect(&copySelectCrossAction, &QAction::triggered, this, [=]{
-        int mainRow, mainCol, rowSpan, colSpan;
-        if (!getSelectedRectInfo(this, mainRow, mainCol, rowSpan, colSpan))
+        QModelIndexList selectedIndexes = this->selectionModel()->selectedIndexes();
+        if (selectedIndexes.isEmpty())
             return;
 
-        int selStartRow = mainRow - 1;
-        int selEndRow = selStartRow + rowSpan - 1;
+        // 从实际选中的索引收集行号和列号
+        QSet<int> selectedRows;
+        QSet<int> selectedDisplayCols;
+        for (const QModelIndex &idx : selectedIndexes) {
+            selectedRows.insert(idx.row());
+            selectedDisplayCols.insert(idx.column());
+        }
+
+        // 按行号排序，保证输出顺序
+        QList<int> sortedRows = selectedRows.values();
+        std::sort(sortedRows.begin(), sortedRows.end());
 
         QString clipboardText;
-        for (int row = selStartRow; row <= selEndRow; ++row) {
+        for (int row : sortedRows) {
             const SparseRow &sr = (*sparseDataVec)[row];
             if (sr.isSeparator)
                 continue;
@@ -259,7 +257,7 @@ void SortPrizeTableView::showContextMenu(const QPoint &pos)
             };
 
             QSet<int> selectedNumbers;
-            for (int c = mainCol; c < mainCol + colSpan; ++c)
+            for (int c : selectedDisplayCols)
                 selectedNumbers.insert(displayColToNumber(c));
 
             for (int col = 1; col <= 80; ++col) {
