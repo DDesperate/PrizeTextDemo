@@ -230,20 +230,30 @@ void SortPrizeTableView::showContextMenu(const QPoint &pos)
 
     QAction copySelectCrossAction(QStringLiteral("复制选中区域(跨区域)"), this);
     connect(&copySelectCrossAction, &QAction::triggered, this, [=]{
-        if (!selectionModel() || selectionModel()->selection().isEmpty())
+        QVector<SelectionGroup> groups = groupSelectedCells(this);
+        if (groups.isEmpty())
             return;
 
-        const QItemSelection &sel = selectionModel()->selection();
-        QStringList rangeTexts;
+        QStringList groupTexts;
 
-        for (const QItemSelectionRange &range : sel) {
-            int selStartRow = range.top();
-            int selEndRow = range.bottom();
-            int selLeftCol = range.left();
-            int selRightCol = range.right();
+        for (const SelectionGroup &group : groups) {
+            // 找出该组的行范围
+            int minRow = INT_MAX, maxRow = -1;
+            for (const auto &cell : group.cells) {
+                minRow = qMin(minRow, cell.first);
+                maxRow = qMax(maxRow, cell.first);
+            }
 
-            QString rangeText;
-            for (int row = selStartRow; row <= selEndRow; ++row) {
+            // 按行收集该组中每行选中的列号
+            QMap<int, QSet<int>> rowCols;
+            for (const auto &cell : group.cells)
+                rowCols[cell.first].insert(cell.second);
+
+            QString groupText;
+            for (int row = minRow; row <= maxRow; ++row) {
+                if (!rowCols.contains(row))
+                    continue;
+
                 const SparseRow &sr = (*sparseDataVec)[row];
                 if (sr.isSeparator)
                     continue;
@@ -264,7 +274,7 @@ void SortPrizeTableView::showContextMenu(const QPoint &pos)
                 };
 
                 QSet<int> selectedNumbers;
-                for (int c = selLeftCol; c <= selRightCol; ++c)
+                for (int c : rowCols[row])
                     selectedNumbers.insert(displayColToNumber(c));
 
                 QString lineText;
@@ -274,15 +284,15 @@ void SortPrizeTableView::showContextMenu(const QPoint &pos)
                         lineText += QString("%1 ").arg(info.prize, 2, 10, QChar('0'));
                 }
                 if (!lineText.isEmpty())
-                    rangeText += lineText + "\n";
+                    groupText += lineText + "\n";
             }
 
-            if (!rangeText.isEmpty())
-                rangeTexts << rangeText;
+            if (!groupText.isEmpty())
+                groupTexts << groupText;
         }
 
         QClipboard *clipboard = QApplication::clipboard();
-        clipboard->setText(rangeTexts.join("\n"));
+        clipboard->setText(groupTexts.join("\n"));
     });
     contextMenu.addAction(&copySelectCrossAction);
 

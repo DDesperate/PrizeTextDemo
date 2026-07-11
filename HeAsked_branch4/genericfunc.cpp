@@ -1,4 +1,5 @@
 #include "genericfunc.h"
+#include <QQueue>
 
 
 quint8 QStringToQuint8(const QString& str) {
@@ -347,4 +348,50 @@ bool getSelectedRectInfo(QTableView* tableView, int& startRow, int& startCol, in
     colCount = range.width();   // 列数（宽度）
 
     return true;
+}
+
+QVector<SelectionGroup> groupSelectedCells(QTableView* tableView)
+{
+    QVector<SelectionGroup> groups;
+
+    if (!tableView || !tableView->selectionModel())
+        return groups;
+
+    QModelIndexList selected = tableView->selectionModel()->selectedIndexes();
+    if (selected.isEmpty())
+        return groups;
+
+    QSet<QPair<int,int>> visited;
+    QSet<QPair<int,int>> allCells;
+    for (const QModelIndex &idx : selected)
+        allCells.insert({idx.row(), idx.column()});
+
+    QVector<QPair<int,int>> directions = {{-1,0},{1,0},{0,-1},{0,1}};
+
+    for (const auto &startCell : allCells) {
+        if (visited.contains(startCell))
+            continue;
+
+        SelectionGroup group;
+        QQueue<QPair<int,int>> queue;
+        queue.enqueue(startCell);
+        visited.insert(startCell);
+
+        while (!queue.isEmpty()) {
+            auto cell = queue.dequeue();
+            group.cells.insert(cell);
+
+            for (const auto &dir : directions) {
+                QPair<int,int> neighbor = {cell.first + dir.first, cell.second + dir.second};
+                if (allCells.contains(neighbor) && !visited.contains(neighbor)) {
+                    visited.insert(neighbor);
+                    queue.enqueue(neighbor);
+                }
+            }
+        }
+
+        groups.append(group);
+    }
+
+    return groups;
 }

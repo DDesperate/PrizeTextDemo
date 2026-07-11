@@ -37,6 +37,12 @@ void copy_onlyPrize(const QString &text,QString mark);
 //获取被选取区域的信息
 bool getSelectedRectInfo(QTableView* tableView, int& startRow, int& startCol, int& rowCount, int& colCount) ;
 
+//选中区域的连通分组
+struct SelectionGroup {
+    QSet<QPair<int,int>> cells;  // 该组内所有单元格 (row, col)
+};
+QVector<SelectionGroup> groupSelectedCells(QTableView* tableView);
+
 
 
 #endif // GENERICFUNC_H
