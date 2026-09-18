@@ -12,6 +12,8 @@
 #include <QMenu>
 #include <QClipboard>
 #include <QApplication>
+#include <QFileDialog>
+#include <QTextStream>
 #include "genericfunc.h"
 
 // ========== SortPrizeTableView ==========
@@ -633,6 +635,10 @@ void SortTableElementsByCountWgt::setupUI()
     btnClearTable = new QPushButton(QStringLiteral("清空表格"), this);
     btnClearTable->setAutoDefault(false);
     btnClearTable->setStyleSheet("background-color: red; color: black;");
+    btnSaveData = new QPushButton(QStringLiteral("保存数据"), this);
+    btnSaveData->setAutoDefault(false);
+    btnLoadData = new QPushButton(QStringLiteral("导入数据"), this);
+    btnLoadData->setAutoDefault(false);
 
     btnLayout->addWidget(btnClearTable);
     btnLayout->addWidget(btnGroupByFreq);
@@ -651,6 +657,8 @@ void SortTableElementsByCountWgt::setupUI()
     btnLayout->addWidget(btnRandomMark);
     btnLayout->addWidget(btnNewestRepeatPrize);
     btnLayout->addWidget(btnClearSelect);
+    btnLayout->addWidget(btnSaveData);
+    btnLayout->addWidget(btnLoadData);
     btnLayout->addStretch();
     layout->addLayout(btnLayout);
 
@@ -686,6 +694,8 @@ void SortTableElementsByCountWgt::setupUI()
     connect(btnClearSelect, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onClearSelect);
     connect(btnClearMark2, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onClearMark2);
     connect(btnClearTable, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onClearTable);
+    connect(btnSaveData, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onSaveData);
+    connect(btnLoadData, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onLoadData);
 }
 
 void SortTableElementsByCountWgt::rebuildSparseData()
@@ -853,6 +863,8 @@ void SortTableElementsByCountWgt::onGroupByFreq()
     m_tableView->refreshModel();
 
     m_isGroupedByFreq = true;
+    btnGroupByFreq->setStyleSheet("background-color: #4CAF50; color: white;");
+    btnUngroupFreq->setStyleSheet("");
 }
 
 void SortTableElementsByCountWgt::onUngroupFreq()
@@ -863,6 +875,8 @@ void SortTableElementsByCountWgt::onUngroupFreq()
     m_originalBlockMappings.clear();
     m_blockDividers.clear();
     m_isGroupedByFreq = false;
+    btnGroupByFreq->setStyleSheet("");
+    btnUngroupFreq->setStyleSheet("background-color: #4CAF50; color: white;");
     m_tableView->refreshModel();
 }
 
@@ -1192,4 +1206,144 @@ void SortTableElementsByCountWgt::onClearTable()
     m_tableView->setBlockColumnMappings(QVector<QVector<int>>());
     m_tableView->setBlockColumnDividers(QVector<QVector<int>>());
     m_tableView->refreshModel();
+}
+
+void SortTableElementsByCountWgt::onSaveData()
+{
+    if (m_sparseData.isEmpty())
+        return;
+
+    QString defaultName = QCoreApplication::applicationDirPath() + "/"
+                        + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".txt";
+    QString fileName = QFileDialog::getSaveFileName(this, QStringLiteral("保存数据"),
+                                                    defaultName,
+                                                    QStringLiteral("文本文件 (*.txt)"));
+    if (fileName.isEmpty())
+        return;
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        return;
+
+    QTextStream out(&file);
+    // 首行：分组状态
+    out << (m_isGroupedByFreq ? "GROUPED" : "UNGROUPED") << "\n";
+    for (const SparseRow &sr : m_sparseData) {
+        if (sr.isSeparator) {
+            out << "---\n";
+            continue;
+        }
+        if (!sr.date.isEmpty())
+            out << sr.date << " ";
+        for (int col = 1; col <= 80; ++col) {
+            const slcInfo &info = sr.prizes[col];
+            if (info.prize == 0)
+                continue;
+            // 格式: num#AARRGGBB#SDM (S=isSelect, D=isDeleted, M=isMark2)
+            out << info.prize
+                << "#" << QString("%1%2%3%4")
+                          .arg(info.color.alpha(), 2, 16, QChar('0'))
+                          .arg(info.color.red(), 2, 16, QChar('0'))
+                          .arg(info.color.green(), 2, 16, QChar('0'))
+                          .arg(info.color.blue(), 2, 16, QChar('0'))
+                << "#" << (info.isSelect ? "1" : "0")
+                       << (info.isDeleted ? "1" : "0")
+                       << (info.isMark2 ? "1" : "0")
+                << " ";
+        }
+        out << "\n";
+    }
+    file.close();
+}
+
+void SortTableElementsByCountWgt::onLoadData()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, QStringLiteral("导入数据"),
+                                                    QCoreApplication::applicationDirPath(),
+                                                    QStringLiteral("文本文件 (*.txt)"));
+    if (fileName.isEmpty())
+        return;
+
+    // 先清空现有数据
+    onClearTable();
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return;
+
+    QTextStream in(&file);
+    m_sparseData.clear();
+
+    bool savedGroupedByFreq = false;
+    while (!in.atEnd()) {
+        QString line = in.readLine().trimmed();
+        if (line.isEmpty())
+            continue;
+
+        if (line == "GROUPED") {
+            savedGroupedByFreq = true;
+            continue;
+        }
+        if (line == "UNGROUPED") {
+            savedGroupedByFreq = false;
+            continue;
+        }
+
+        if (line == "---") {
+            SparseRow sep;
+            sep.isSeparator = true;
+            m_sparseData.append(sep);
+            continue;
+        }
+
+        SparseRow sr;
+        QStringList parts = line.split(' ', Qt::SkipEmptyParts);
+        if (parts.isEmpty())
+            continue;
+
+        sr.date = parts[0];
+        for (int i = 1; i < parts.size(); ++i) {
+            // 格式: num#AARRGGBB#SDM
+            QStringList cellParts = parts[i].split('#');
+            if (cellParts.size() < 3)
+                continue;
+            bool ok;
+            int num = cellParts[0].toInt(&ok);
+            if (!ok || num < 1 || num > 80)
+                continue;
+            sr.prizes[num].prize = static_cast<quint8>(num);
+            // 解析颜色 AARRGGBB
+            QColor c;
+            if (cellParts[1].length() == 8) {
+                c.setAlpha(cellParts[1].mid(0,2).toInt(nullptr,16));
+                c.setRed(cellParts[1].mid(2,2).toInt(nullptr,16));
+                c.setGreen(cellParts[1].mid(4,2).toInt(nullptr,16));
+                c.setBlue(cellParts[1].mid(6,2).toInt(nullptr,16));
+            } else {
+                c = QColor(cellParts[1]);
+            }
+            sr.prizes[num].color = c;
+            if (cellParts[2].size() >= 3) {
+                sr.prizes[num].isSelect  = cellParts[2][0] == '1';
+                sr.prizes[num].isDeleted = cellParts[2][1] == '1';
+                sr.prizes[num].isMark2   = cellParts[2][2] == '1';
+            }
+        }
+        m_sparseData.append(sr);
+    }
+    file.close();
+
+    m_groups.clear();
+    m_originalBlockMappings.clear();
+    m_blockDividers.clear();
+    m_delegate->setBlockColumnMappings(QVector<QVector<int>>());
+    m_delegate->setBlockColumnDividers(QVector<QVector<int>>());
+    m_tableView->setBlockColumnMappings(QVector<QVector<int>>());
+    m_tableView->setBlockColumnDividers(QVector<QVector<int>>());
+    m_isGroupedByFreq = false;
+
+    if (savedGroupedByFreq)
+        onGroupByFreq();
+    else
+        m_tableView->refreshModel();
 }

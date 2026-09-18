@@ -109,6 +109,8 @@ private slots:
     void onClearSelect();
     void onClearMark2();
     void onClearTable();
+    void onSaveData();
+    void onLoadData();
 
 public:
     void markLatestRepeatPrize(const QList<quint8> &list);
@@ -138,6 +140,8 @@ private:
     QPushButton *btnClearSelect;
     QPushButton *btnClearMark2;
     QPushButton *btnClearTable;
+    QPushButton *btnSaveData;
+    QPushButton *btnLoadData;
     NumLineEdit *numLineEdit;
     QPushButton *btnMark;
 
