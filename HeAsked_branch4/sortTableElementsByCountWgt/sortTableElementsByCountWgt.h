@@ -1,7 +1,7 @@
 #ifndef SORTTABLEELEMENTSBYCOUNTWGT_H
 #define SORTTABLEELEMENTSBYCOUNTWGT_H
 
-#include <QDialog>
+#include <QWidget>
 #include <QTableView>
 #include <QStandardItemModel>
 #include <QVector>
@@ -79,12 +79,12 @@ private:
     bool useSparseData = false;
 };
 
-class SortTableElementsByCountWgt : public QDialog
+class SortTableElementsByCountWgt : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit SortTableElementsByCountWgt(QWidget *parent, const QRect& rect);
+    explicit SortTableElementsByCountWgt(QWidget *parent = nullptr);
     ~SortTableElementsByCountWgt();
 
     void updateData(const QVector<slctTbRow>& repeatData,

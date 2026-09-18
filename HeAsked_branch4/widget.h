@@ -179,6 +179,8 @@ private:
     QVBoxLayout *layV_page1;
 
     //分裂布局和两个tableView
+    QTabWidget *tbvTabWidget;
+    QWidget *tabPage1_main;
     QSplitter *splitter;
     UpTableView *upTbv;
     DownTableView *downTbv;
@@ -302,6 +304,7 @@ private:
     QPointer<TwoStepVerificationWgt> twoStepVerificationWgt = nullptr;
     QPointer<CheckoutWgt> checkoutWgt = nullptr;
     QPointer<SortTableElementsByCountWgt> sortTableElementsByCountWgt = nullptr;
+    QPointer<QDialog> sortTableDialog = nullptr;
 
     ///自选组合页面
     QWidget *selfSelectCombine;

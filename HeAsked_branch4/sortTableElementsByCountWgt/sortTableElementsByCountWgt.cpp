@@ -590,12 +590,9 @@ void SortDataDelegate::paintOriginal(QPainter *painter, const QStyleOptionViewIt
 
 // ========== SortTableElementsByCountWgt ==========
 
-SortTableElementsByCountWgt::SortTableElementsByCountWgt(QWidget *parent, const QRect& rect) :
-    QDialog(parent)
+SortTableElementsByCountWgt::SortTableElementsByCountWgt(QWidget *parent) :
+    QWidget(parent)
 {
-    setWindowFlags(Qt::Window | Qt::WindowCloseButtonHint | Qt::WindowMinMaxButtonsHint);
-    setGeometry(rect);
-    setWindowTitle(QStringLiteral("数据处理窗口"));
     setupUI();
 }
 

@@ -151,7 +151,14 @@ void Widget::setUi(QWidget* widget)
     splitter->addWidget(downTbv);
     splitter->setHandleWidth(5);
     splitter->setStyleSheet("QSplitter::handle { background-color: red; }");
-    layV_page1->addWidget(splitter);
+
+    //将splitter放入tabWidget的tab1中
+    tbvTabWidget = new QTabWidget(pgTbv);
+    tabPage1_main = new QWidget(tbvTabWidget);
+    QVBoxLayout *layV_tabPage1 = new QVBoxLayout(tabPage1_main);
+    layV_tabPage1->addWidget(splitter);
+    tbvTabWidget->addTab(tabPage1_main, QString("数据"));
+    layV_page1->addWidget(tbvTabWidget);
 
     //相同项
     layH_repeatPrize_selectRows = new QHBoxLayout();
@@ -266,6 +273,7 @@ void Widget::setUi(QWidget* widget)
     layH_strike_clear->addWidget(mixMode);
     layH_strike_clear->addStretch();
     layH_strike_clear->addWidget(btn_sortTableElementsByCount);
+    btn_sortTableElementsByCount->hide();
     layV_page1->addLayout(layH_strike_clear);
 
     //表格排序

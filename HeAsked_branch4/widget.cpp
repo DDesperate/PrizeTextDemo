@@ -911,41 +911,52 @@ Widget::Widget(QWidget *parent)
     });
 
 
+    //将表格排序功能内嵌到tab2
+    sortTableElementsByCountWgt = new SortTableElementsByCountWgt(tbvTabWidget);
+    tbvTabWidget->addTab(sortTableElementsByCountWgt, QString("表格排序"));
+    connect(sortTableElementsByCountWgt, &SortTableElementsByCountWgt::requestDataSync, this, [=]{
+        sortTableElementsByCountWgt->updateData(downTbv->outputRepeatData(),
+                                              downTbv->outputNeighborData(),
+                                              downTbv->outputMixData());
+    });
+    connect(sortTableElementsByCountWgt, &SortTableElementsByCountWgt::requestLatestRepeatPrize, this, [=]{
+        QList<quint8> list = upTbv->getLastRow();
+        sortTableElementsByCountWgt->markLatestRepeatPrize(list);
+    });
+
     //弹出表格排序窗口（窗口内点击按钮后，从 downTbv 拉取数据）
     connect(btn_sortTableElementsByCount,&QPushButton::clicked,[=]{
-
-        //使新弹出的窗口与上表对齐
         QRect tbvAGlobalRect = upTbv->geometry();
         tbvAGlobalRect.moveTopLeft(upTbv->mapToGlobal(tbvAGlobalRect.topLeft()));
 
-        //如果窗口指针不为空，则将窗口显示在最上方
-        if (sortTableElementsByCountWgt!= nullptr) {
-            // 如果窗口最小化了，恢复正常状态
-            if (sortTableElementsByCountWgt->isMinimized()) {
-                sortTableElementsByCountWgt->setWindowState(
-                    (sortTableElementsByCountWgt->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+        if (sortTableDialog != nullptr) {
+            if (sortTableDialog->isMinimized()) {
+                sortTableDialog->setWindowState(
+                    (sortTableDialog->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
             }
-
-            sortTableElementsByCountWgt->show();   // 显示窗口
-            sortTableElementsByCountWgt->raise();  // 提到最前面
-            sortTableElementsByCountWgt->activateWindow(); // 激活窗口（获得焦点）
+            sortTableDialog->show();
+            sortTableDialog->raise();
+            sortTableDialog->activateWindow();
         }
-        //否则new这个窗口
         else{
-            //参数1:父窗口
-            //参数2:使新弹出的窗口与上表对齐
-            sortTableElementsByCountWgt = new SortTableElementsByCountWgt(pgTbv,tbvAGlobalRect);
-            connect(sortTableElementsByCountWgt, &SortTableElementsByCountWgt::requestDataSync, this, [=]{
-                sortTableElementsByCountWgt->updateData(downTbv->outputRepeatData(),
-                                                      downTbv->outputNeighborData(),
-                                                      downTbv->outputMixData());
+            sortTableDialog = new QDialog(pgTbv);
+            sortTableDialog->setWindowFlags(Qt::Window | Qt::WindowCloseButtonHint | Qt::WindowMinMaxButtonsHint);
+            sortTableDialog->setGeometry(tbvAGlobalRect);
+            sortTableDialog->setWindowTitle(QStringLiteral("数据处理窗口"));
+            SortTableElementsByCountWgt *wgt = new SortTableElementsByCountWgt(sortTableDialog);
+            QVBoxLayout *dlgLayout = new QVBoxLayout(sortTableDialog);
+            dlgLayout->addWidget(wgt);
+            connect(wgt, &SortTableElementsByCountWgt::requestDataSync, this, [=]{
+                wgt->updateData(downTbv->outputRepeatData(),
+                              downTbv->outputNeighborData(),
+                              downTbv->outputMixData());
             });
-            connect(sortTableElementsByCountWgt, &SortTableElementsByCountWgt::requestLatestRepeatPrize, this, [=]{
+            connect(wgt, &SortTableElementsByCountWgt::requestLatestRepeatPrize, this, [=]{
                 QList<quint8> list = upTbv->getLastRow();
-                sortTableElementsByCountWgt->markLatestRepeatPrize(list);
+                wgt->markLatestRepeatPrize(list);
             });
-            sortTableElementsByCountWgt->setAttribute(Qt::WA_DeleteOnClose);
-            sortTableElementsByCountWgt->show();
+            sortTableDialog->setAttribute(Qt::WA_DeleteOnClose);
+            sortTableDialog->show();
         }
     });
 
