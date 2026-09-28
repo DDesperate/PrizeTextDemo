@@ -14,6 +14,8 @@
 #include <QApplication>
 #include <QFileDialog>
 #include <QTextStream>
+#include <QDialog>
+#include <QTextEdit>
 #include "genericfunc.h"
 
 // ========== SortPrizeTableView ==========
@@ -696,6 +698,23 @@ void SortTableElementsByCountWgt::setupUI()
     connect(btnMark, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onMarkNumbers);
     connect(btnClearSelect, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onClearSelect);
     connect(btnClearMark2, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onClearMark2);
+    connect(btnToggleGroup, &QPushButton::clicked, this, [=]{
+        QDialog dlg(this);
+        dlg.setWindowTitle(QStringLiteral("分组"));
+        QVBoxLayout *lay = new QVBoxLayout(&dlg);
+        QPushButton *btnGroup = new QPushButton(QStringLiteral("分组"), &dlg);
+        QSpinBox *spinBox = new QSpinBox(&dlg);
+        QHBoxLayout *btnRow = new QHBoxLayout();
+        btnRow->addWidget(btnGroup);
+        btnRow->addWidget(spinBox);
+        btnRow->addStretch();
+        NumLineEdit *numEdit = new NumLineEdit(&dlg);
+        QTextEdit *editData = new QTextEdit(&dlg);
+        lay->addLayout(btnRow);
+        lay->addWidget(numEdit);
+        lay->addWidget(editData);
+        dlg.exec();
+    });
     connect(btnClearTable, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onClearTable);
     connect(btnSaveData, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onSaveData);
     connect(btnLoadData, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onLoadData);
