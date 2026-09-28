@@ -139,6 +139,7 @@ private:
     QPushButton *btnNewestRepeatPrize;
     QPushButton *btnClearSelect;
     QPushButton *btnClearMark2;
+    QPushButton *btnToggleGroup;
     QPushButton *btnClearTable;
     QPushButton *btnSaveData;
     QPushButton *btnLoadData;

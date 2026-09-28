@@ -632,6 +632,8 @@ void SortTableElementsByCountWgt::setupUI()
     btnClearSelect->setAutoDefault(false);
     btnClearMark2 = new QPushButton(QStringLiteral("清除标记(黄色)"), this);
     btnClearMark2->setAutoDefault(false);
+    btnToggleGroup = new QPushButton(QStringLiteral("分组"), this);
+    btnToggleGroup->setAutoDefault(false);
     btnClearTable = new QPushButton(QStringLiteral("清空表格"), this);
     btnClearTable->setAutoDefault(false);
     btnClearTable->setStyleSheet("background-color: red; color: black;");
@@ -669,6 +671,7 @@ void SortTableElementsByCountWgt::setupUI()
     numLineEditLayout->addWidget(numLineEdit);
     numLineEditLayout->addWidget(btnMark);
     numLineEditLayout->addWidget(btnClearMark2);
+    numLineEditLayout->addWidget(btnToggleGroup);
     numLineEditLayout->addStretch();
     layout->addLayout(numLineEditLayout);
 
