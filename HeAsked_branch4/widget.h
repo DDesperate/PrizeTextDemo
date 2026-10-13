@@ -369,6 +369,16 @@ private:
 
     QVector<QList<quint8>> tab_NumberExclusion_lastRes;
 
+    ///分组页面
+    QWidget *tab_Grouping;
+    QVBoxLayout *vlay_tab_Grouping;
+    QHBoxLayout *hlay1_tab_Grouping;
+    QHBoxLayout *hlay2_tab_Grouping;
+    QPushButton *tab_Grouping_btn_group;
+    QSpinBox *tab_Grouping_spinbox;
+    NumLineEdit *tab_Grouping_numEdit;
+    QTextEdit *tab_Grouping_plainText_res;
+
 
 private slots:
     void addNumToExcludeList(int num);

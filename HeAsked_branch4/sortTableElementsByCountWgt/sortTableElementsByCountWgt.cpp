@@ -713,6 +713,36 @@ void SortTableElementsByCountWgt::setupUI()
         lay->addLayout(btnRow);
         lay->addWidget(numEdit);
         lay->addWidget(editData);
+
+        connect(btnGroup, &QPushButton::clicked, [=]{
+            numEdit->fmtNum();
+            QList<quint8> numbers = numEdit->strToList();
+            int n = numbers.size();
+            int m = spinBox->value();
+
+            if (n == 0) {
+                QMessageBox::warning(nullptr, QStringLiteral("警告"),
+                                     QStringLiteral("请输入数字"));
+                return;
+            }
+            if (m >= n) {
+                QMessageBox::warning(nullptr, QStringLiteral("警告"),
+                                     QStringLiteral("参数m必须小于数字个数n"));
+                return;
+            }
+
+            int k = n - m + 1;
+            QString result;
+            for (int i = 0; i < k; ++i) {
+                for (int j = 0; j < m; ++j) {
+                    if (j > 0) result += " ";
+                    result += QString::number(numbers[i + j]).rightJustified(2, '0');
+                }
+                result += "\n";
+            }
+            editData->setPlainText(result.trimmed());
+        });
+
         dlg.exec();
     });
     connect(btnClearTable, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onClearTable);

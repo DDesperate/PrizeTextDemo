@@ -579,6 +579,28 @@ void Widget::setUi(QWidget* widget)
 
     tabWidget->addTab(tab_NumberExclusion, QString("剔除"));
 
+    //分组Tab
+    tab_Grouping = new QWidget(tabWidget);
+    vlay_tab_Grouping = new QVBoxLayout(tab_Grouping);
+    hlay1_tab_Grouping = new QHBoxLayout(tab_Grouping);
+    hlay2_tab_Grouping = new QHBoxLayout(tab_Grouping);
+    tab_Grouping_btn_group = new QPushButton("分组", tab_Grouping);
+    tab_Grouping_spinbox = new QSpinBox(tab_Grouping);
+    tab_Grouping_numEdit = new NumLineEdit(tab_Grouping);
+    tab_Grouping_plainText_res = new QTextEdit(tab_Grouping);
+    tab_Grouping_plainText_res->setReadOnly(true);
+
+    hlay1_tab_Grouping->addWidget(tab_Grouping_btn_group);
+    hlay1_tab_Grouping->addWidget(tab_Grouping_spinbox);
+    hlay1_tab_Grouping->addStretch();
+    hlay2_tab_Grouping->addWidget(tab_Grouping_numEdit);
+    hlay2_tab_Grouping->addStretch();
+    vlay_tab_Grouping->addLayout(hlay1_tab_Grouping);
+    vlay_tab_Grouping->addLayout(hlay2_tab_Grouping);
+    vlay_tab_Grouping->addWidget(tab_Grouping_plainText_res);
+
+    tabWidget->addTab(tab_Grouping, QString("分组"));
+
 
 
 

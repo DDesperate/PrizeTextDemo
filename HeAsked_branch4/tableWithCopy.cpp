@@ -85,41 +85,26 @@ void TableWithCopy::copySelectedItems() {
     QItemSelectionModel *selection = selectionModel();
     if (!selection || !selection->hasSelection()) return;
 
-    QModelIndexList selected = selection->selectedIndexes();
-    if (selected.isEmpty()) return;
+    const QItemSelection &sel = selection->selection();
+    if (sel.isEmpty()) return;
 
-    // 找出选中区域的行列范围
-    int minRow = INT_MAX, maxRow = INT_MIN;
-    int minCol = INT_MAX, maxCol = INT_MIN;
-    for (const QModelIndex &idx : selected) {
-        minRow = qMin(minRow, idx.row());
-        maxRow = qMax(maxRow, idx.row());
-        minCol = qMin(minCol, idx.column());
-        maxCol = qMax(maxCol, idx.column());
-    }
-
-    // 构建 (row, col) -> QModelIndex 的映射
-    QSet<QPair<int,int>> selectedSet;
-    for (const QModelIndex &idx : selected) {
-        selectedSet.insert({idx.row(), idx.column()});
-    }
-
-    QString copiedText;
-    for (int row = minRow; row <= maxRow; ++row) {
-        QStringList rowData;
-        for (int col = minCol; col <= maxCol; ++col) {
-            if (selectedSet.contains({row, col})) {
+    QStringList rangeTexts;
+    for (const QItemSelectionRange &range : sel) {
+        QString rangeText;
+        for (int row = range.top(); row <= range.bottom(); ++row) {
+            QStringList rowData;
+            for (int col = range.left(); col <= range.right(); ++col) {
                 QTableWidgetItem *item = this->item(row, col);
                 rowData << (item ? item->text() : "");
-            } else {
-                rowData << "";
             }
+            rangeText += rowData.join(" ") + "\n";
         }
-        copiedText += rowData.join(" ") + "\n";
+        if (!rangeText.isEmpty())
+            rangeTexts << rangeText;
     }
 
     QClipboard *clipboard = QApplication::clipboard();
-    clipboard->setText(copiedText);
+    clipboard->setText(rangeTexts.join("\n"));
 }
 
 

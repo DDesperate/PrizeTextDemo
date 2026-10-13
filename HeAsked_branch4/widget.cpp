@@ -910,6 +910,36 @@ Widget::Widget(QWidget *parent)
         copy_onlyPrize(tab_NumberExclusion_plainText_res->toPlainText(),"元素个数");
     });
 
+    //分组Tab: 分组按钮
+    connect(tab_Grouping_btn_group, &QPushButton::clicked, [this]{
+        tab_Grouping_numEdit->fmtNum();
+        QList<quint8> numbers = tab_Grouping_numEdit->strToList();
+        int n = numbers.size();
+        int m = tab_Grouping_spinbox->value();
+
+        if (n == 0) {
+            QMessageBox::warning(nullptr, QStringLiteral("警告"),
+                                 QStringLiteral("请输入数字"));
+            return;
+        }
+        if (m >= n) {
+            QMessageBox::warning(nullptr, QStringLiteral("警告"),
+                                 QStringLiteral("参数m必须小于数字个数n"));
+            return;
+        }
+
+        int k = n - m + 1;
+        QString result;
+        for (int i = 0; i < k; ++i) {
+            for (int j = 0; j < m; ++j) {
+                if (j > 0) result += " ";
+                result += QString::number(numbers[i + j]).rightJustified(2, '0');
+            }
+            result += "\n";
+        }
+        tab_Grouping_plainText_res->setPlainText(result.trimmed());
+    });
+
 
     //将表格排序功能内嵌到tab2
     sortTableElementsByCountWgt = new SortTableElementsByCountWgt(tbvTabWidget);
