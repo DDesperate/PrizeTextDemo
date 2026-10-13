@@ -331,6 +331,7 @@ private:
     QSpinBox *filter_spinBox;
     QPlainTextEdit *combine_Res;
     QPlainTextEdit *combine_Res2;
+    QPushButton *btn_copyPureNumber;
     QHBoxLayout *layH_combineRes_selfSelectCombine;
     QVector<QList<quint8>> combine_res_data;
     //暂时存放被复制的数据的数据结构

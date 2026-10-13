@@ -488,6 +488,8 @@ void Widget::setUi(QWidget* widget)
     combine_Res->setReadOnly(true);
     combine_Res2 = new QPlainTextEdit(selfSelectCombine);
     combine_Res2->setReadOnly(true);
+    btn_copyPureNumber = new QPushButton("复制(纯数字)", selfSelectCombine);
+    layH_combineBtn_selfSelectCombine->addWidget(btn_copyPureNumber);
     layH_combineRes_selfSelectCombine = new QHBoxLayout(selfSelectCombine);
 
     //布局

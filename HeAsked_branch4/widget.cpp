@@ -691,6 +691,32 @@ Widget::Widget(QWidget *parent)
         dlg->show();
     });
 
+    // 复制(纯数字) 按钮 - 只复制重复项的数字部分
+    connect(btn_copyPureNumber, &QPushButton::clicked, [=]{
+        QString text = combine_Res2->toPlainText();
+        if (text.isEmpty()) return;
+
+        QStringList lines = text.split("\n", Qt::SkipEmptyParts);
+        QStringList pureNumbers;
+
+        for (const QString &line : lines) {
+            // 跳过 "重复项数:X" 这一行
+            if (line.startsWith("重复项数:"))
+                continue;
+
+            // 提取数字部分，去掉 "(重复X次)"
+            QString trimmed = line.trimmed();
+            int parenPos = trimmed.indexOf("(重复");
+            if (parenPos > 0) {
+                pureNumbers << trimmed.left(parenPos).trimmed();
+            } else if (!trimmed.isEmpty()) {
+                pureNumbers << trimmed;
+            }
+        }
+
+        QApplication::clipboard()->setText(pureNumbers.join("\n"));
+    });
+
     //把左表dataTable中的数据前n行放到dataTable_randomshuffling当中
     connect(getInfo_randomshuffling,&QPushButton::clicked,[=]{
         clearData(dataTable_randomshuffling);
