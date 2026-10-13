@@ -112,6 +112,7 @@ private slots:
     void onSaveData();
     void onLoadData();
     void onExcludeNumbers();
+    void onUnexcludeNumbers();
 
 public:
     void markLatestRepeatPrize(const QList<quint8> &list);
@@ -148,6 +149,7 @@ private:
     QPushButton *btnMark;
     NumLineEdit *numLineEdit_exclude;
     QPushButton *btnExclude;
+    QPushButton *btnUnexclude;
 
     // 每次拉取的三种模式数据
     struct GroupData {

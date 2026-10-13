@@ -681,10 +681,13 @@ void SortTableElementsByCountWgt::setupUI()
     numLineEdit_exclude = new NumLineEdit(this);
     btnExclude = new QPushButton(QStringLiteral("剔除"), this);
     btnExclude->setAutoDefault(false);
+    btnUnexclude = new QPushButton(QStringLiteral("取消剔除"), this);
+    btnUnexclude->setAutoDefault(false);
     QHBoxLayout *excludeLayout = new QHBoxLayout();
     excludeLayout->addWidget(new QLabel(QStringLiteral("剔除项"), this));
     excludeLayout->addWidget(numLineEdit_exclude);
     excludeLayout->addWidget(btnExclude);
+    excludeLayout->addWidget(btnUnexclude);
     excludeLayout->addStretch();
     layout->addLayout(excludeLayout);
 
@@ -760,6 +763,7 @@ void SortTableElementsByCountWgt::setupUI()
     connect(btnSaveData, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onSaveData);
     connect(btnLoadData, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onLoadData);
     connect(btnExclude, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onExcludeNumbers);
+    connect(btnUnexclude, &QPushButton::clicked, this, &SortTableElementsByCountWgt::onUnexcludeNumbers);
 }
 
 void SortTableElementsByCountWgt::rebuildSparseData()
@@ -1443,4 +1447,38 @@ void SortTableElementsByCountWgt::onExcludeNumbers()
 
     QMessageBox::information(this, QStringLiteral("完成"),
                              QStringLiteral("已剔除 %1 项").arg(excludedCount));
+}
+
+void SortTableElementsByCountWgt::onUnexcludeNumbers()
+{
+    if (m_sparseData.isEmpty()) {
+        QMessageBox::information(this, QStringLiteral("提示"),
+                                 QStringLiteral("暂无数据，请先拉取数据"));
+        return;
+    }
+
+    QList<quint8> numbers = numLineEdit_exclude->strToList();
+    if (numbers.isEmpty()) {
+        QMessageBox::warning(nullptr, QStringLiteral("警告"),
+                             QStringLiteral("请输入要取消剔除的数字"));
+        return;
+    }
+
+    int unexcludedCount = 0;
+    for (SparseRow &sr : m_sparseData) {
+        if (sr.isSeparator) continue;
+        for (int col = 1; col <= 80; ++col) {
+            if (sr.prizes[col].prize != 0 && numbers.contains(sr.prizes[col].prize)) {
+                if (sr.prizes[col].isDeleted) {
+                    sr.prizes[col].isDeleted = false;
+                    unexcludedCount++;
+                }
+            }
+        }
+    }
+
+    m_tableView->refreshModel();
+
+    QMessageBox::information(this, QStringLiteral("完成"),
+                             QStringLiteral("已取消剔除 %1 项").arg(unexcludedCount));
 }
