@@ -1,0 +1,27 @@
+已完成！在"剔除"按钮旁边添加了"取消剔除"按钮。
+
+  新增行布局（更新后）：
+  - 标签 "剔除项"
+  - NumLineEdit (数字输入框)
+  - 剔除 按钮
+  - 取消剔除 按钮
+
+  功能说明：
+  - 取消剔除：将指定数字的 isDeleted 状态恢复为 false，使被剔除的单元格重新显示
+  - 如果输入的数字没有被剔除，则不会有任何效果
+  - 使用同一个输入框 (numLineEdit_exclude)，方便用户在剔除和取消剔除之间切换
+
+  修改的文件：
+  1. sortTableElementsByCountWgt.h - 添加了 btnUnexclude 成员变量和 onUnexcludeNumbers() 槽函数声明
+  2. sortTableElementsByCountWgt.cpp - 添加了按钮创建、布局和槽函数实现
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch main
+# Your branch is up to date with 'origin/main'.
+#
+# Changes to be committed:
+#	modified:   HeAsked_branch4/sortTableElementsByCountWgt/sortTableElementsByCountWgt.cpp
+#	modified:   HeAsked_branch4/sortTableElementsByCountWgt/sortTableElementsByCountWgt.h
+#

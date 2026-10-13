@@ -486,6 +486,9 @@ void Widget::setUi(QWidget* widget)
     layH_combineBtn_selfSelectCombine->addStretch();
     combine_Res = new QPlainTextEdit(selfSelectCombine);
     combine_Res->setReadOnly(true);
+    combine_Res2 = new QPlainTextEdit(selfSelectCombine);
+    combine_Res2->setReadOnly(true);
+    layH_combineRes_selfSelectCombine = new QHBoxLayout(selfSelectCombine);
 
     //布局
     layV_selfSelectCombine->addLayout(layH_copy_selfSelectCombine);
@@ -508,7 +511,9 @@ void Widget::setUi(QWidget* widget)
     layV_selfSelectCombine->addLayout(layV_combine_selfSelectCombine);
     //组合部分
     layV_selfSelectCombine->addLayout(layH_combineBtn_selfSelectCombine);
-    layV_selfSelectCombine->addWidget(combine_Res);
+    layH_combineRes_selfSelectCombine->addWidget(combine_Res);
+    layH_combineRes_selfSelectCombine->addWidget(combine_Res2);
+    layV_selfSelectCombine->addLayout(layH_combineRes_selfSelectCombine);
 
     tabWidget->addTab(selfSelectCombine, QString("自选组合"));
 

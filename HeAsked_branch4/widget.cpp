@@ -617,6 +617,31 @@ Widget::Widget(QWidget *parent)
             }
         }
 
+        // 统计重复项及其出现次数
+        QMap<QString, QPair<QList<quint8>, int>> itemCountMap;
+        for (const QList<quint8>& row : res) {
+            QString key = formatQVectorQListToString(QVector<QList<quint8>>{row});
+            if (itemCountMap.contains(key)) {
+                itemCountMap[key].second++;
+            } else {
+                itemCountMap[key] = qMakePair(row, 1);
+            }
+        }
+
+        // 找出重复项（出现次数 > 1）
+        QVector<QPair<QList<quint8>, int>> duplicateItems;
+        for (auto it = itemCountMap.begin(); it != itemCountMap.end(); ++it) {
+            if (it.value().second > 1) {
+                duplicateItems.append(qMakePair(it.value().first, it.value().second));
+            }
+        }
+
+        // 按重复次数降序排序
+        std::sort(duplicateItems.begin(), duplicateItems.end(),
+                  [](const QPair<QList<quint8>, int>& a, const QPair<QList<quint8>, int>& b) {
+                      return a.second > b.second;
+                  });
+
         res = removeDuplicates(res);
 
         //排序
@@ -624,21 +649,18 @@ Widget::Widget(QWidget *parent)
 
         combine_res_data = res;
 
-
-
-//        for (const QList<quint8>& row : res) {
-//            for (quint8 value : row) {
-//                resultText += QString::number(value).rightJustified(2,'0') + " ";
-//            }
-//            resultText += "\n";
-//        }
-
         QString rowCount = "总行数:"+QString::number(res.size())+"\n";
 
         // 将结果设置为 QPlainTextEdit 的文本内容
         combine_Res->setPlainText(rowCount+formatQVectorQListToString(res));
 
-
+        // 显示重复项到第二个文本框
+        QString duplicateText = "重复项数:" + QString::number(duplicateItems.size()) + "\n";
+        for (const auto& item : duplicateItems) {
+            duplicateText += formatQVectorQListToString(QVector<QList<quint8>>{item.first}).trimmed();
+            duplicateText += " (重复" + QString::number(item.second) + "次)\n";
+        }
+        combine_Res2->setPlainText(duplicateText);
     });
 
     connect(filter_btn,&QPushButton::clicked,[=]{
