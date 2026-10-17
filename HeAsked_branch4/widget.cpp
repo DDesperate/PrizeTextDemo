@@ -636,10 +636,10 @@ Widget::Widget(QWidget *parent)
             }
         }
 
-        // 按重复次数降序排序
+        // 按数字内容排序
         std::sort(duplicateItems.begin(), duplicateItems.end(),
                   [](const QPair<QList<quint8>, int>& a, const QPair<QList<quint8>, int>& b) {
-                      return a.second > b.second;
+                      return customSort(a.first, b.first);
                   });
 
         res = removeDuplicates(res);
