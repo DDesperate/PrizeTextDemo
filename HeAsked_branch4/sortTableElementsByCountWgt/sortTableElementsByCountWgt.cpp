@@ -1278,8 +1278,11 @@ void SortTableElementsByCountWgt::onClearTable()
 
 void SortTableElementsByCountWgt::onSaveData()
 {
-    if (m_sparseData.isEmpty())
+    if (m_sparseData.isEmpty() && m_groups.isEmpty())
         return;
+
+    // 将 m_sparseData 的修改同步回 m_groups
+    syncSparseDataToGroups();
 
     QString defaultName = QCoreApplication::applicationDirPath() + "/"
                         + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".txt";
@@ -1296,30 +1299,83 @@ void SortTableElementsByCountWgt::onSaveData()
     QTextStream out(&file);
     // 首行：分组状态
     out << (m_isGroupedByFreq ? "GROUPED" : "UNGROUPED") << "\n";
-    for (const SparseRow &sr : m_sparseData) {
-        if (sr.isSeparator) {
-            out << "---\n";
-            continue;
+    // 第二行：当前模式
+    out << "MODE:" << m_currentMode << "\n";
+
+    // 保存每组数据（三种模式）
+    for (int g = 0; g < m_groups.size(); ++g) {
+        const GroupData &grp = m_groups[g];
+
+        // 保存重号数据
+        out << "GROUP_REPEAT_START\n";
+        for (const slctTbRow &row : grp.repeatData) {
+            out << row.date << " ";
+            for (const slcInfo &info : row.prizes) {
+                if (info.prize == 0)
+                    continue;
+                out << info.prize
+                    << "#" << QString("%1%2%3%4")
+                              .arg(info.color.alpha(), 2, 16, QChar('0'))
+                              .arg(info.color.red(), 2, 16, QChar('0'))
+                              .arg(info.color.green(), 2, 16, QChar('0'))
+                              .arg(info.color.blue(), 2, 16, QChar('0'))
+                    << "#" << (info.isSelect ? "1" : "0")
+                           << (info.isDeleted ? "1" : "0")
+                           << (info.isMark2 ? "1" : "0")
+                    << " ";
+            }
+            out << "\n";
         }
-        if (!sr.date.isEmpty())
-            out << sr.date << " ";
-        for (int col = 1; col <= 80; ++col) {
-            const slcInfo &info = sr.prizes[col];
-            if (info.prize == 0)
-                continue;
-            // 格式: num#AARRGGBB#SDM (S=isSelect, D=isDeleted, M=isMark2)
-            out << info.prize
-                << "#" << QString("%1%2%3%4")
-                          .arg(info.color.alpha(), 2, 16, QChar('0'))
-                          .arg(info.color.red(), 2, 16, QChar('0'))
-                          .arg(info.color.green(), 2, 16, QChar('0'))
-                          .arg(info.color.blue(), 2, 16, QChar('0'))
-                << "#" << (info.isSelect ? "1" : "0")
-                       << (info.isDeleted ? "1" : "0")
-                       << (info.isMark2 ? "1" : "0")
-                << " ";
+        out << "GROUP_REPEAT_END\n";
+
+        // 保存邻号数据
+        out << "GROUP_NEIGHBOR_START\n";
+        for (const slctTbRow &row : grp.neighborData) {
+            out << row.date << " ";
+            for (const slcInfo &info : row.prizes) {
+                if (info.prize == 0)
+                    continue;
+                out << info.prize
+                    << "#" << QString("%1%2%3%4")
+                              .arg(info.color.alpha(), 2, 16, QChar('0'))
+                              .arg(info.color.red(), 2, 16, QChar('0'))
+                              .arg(info.color.green(), 2, 16, QChar('0'))
+                              .arg(info.color.blue(), 2, 16, QChar('0'))
+                    << "#" << (info.isSelect ? "1" : "0")
+                           << (info.isDeleted ? "1" : "0")
+                           << (info.isMark2 ? "1" : "0")
+                    << " ";
+            }
+            out << "\n";
         }
-        out << "\n";
+        out << "GROUP_NEIGHBOR_END\n";
+
+        // 保存混合数据
+        out << "GROUP_MIX_START\n";
+        for (const slctTbRow &row : grp.mixData) {
+            out << row.date << " ";
+            for (const slcInfo &info : row.prizes) {
+                if (info.prize == 0)
+                    continue;
+                out << info.prize
+                    << "#" << QString("%1%2%3%4")
+                              .arg(info.color.alpha(), 2, 16, QChar('0'))
+                              .arg(info.color.red(), 2, 16, QChar('0'))
+                              .arg(info.color.green(), 2, 16, QChar('0'))
+                              .arg(info.color.blue(), 2, 16, QChar('0'))
+                    << "#" << (info.isSelect ? "1" : "0")
+                           << (info.isDeleted ? "1" : "0")
+                           << (info.isMark2 ? "1" : "0")
+                    << " ";
+            }
+            out << "\n";
+        }
+        out << "GROUP_MIX_END\n";
+
+        // 组之间用分隔符标记
+        if (g < m_groups.size() - 1) {
+            out << "GROUP_SEPARATOR\n";
+        }
     }
     file.close();
 }
@@ -1341,13 +1397,62 @@ void SortTableElementsByCountWgt::onLoadData()
 
     QTextStream in(&file);
     m_sparseData.clear();
+    m_groups.clear();
 
     bool savedGroupedByFreq = false;
+    int savedMode = 0;
+
+    // 辅助函数：解析一行数据为 slctTbRow
+    auto parseRow = [](const QString &line) -> slctTbRow {
+        slctTbRow row;
+        row.isSelected = false;  // 初始化
+        QStringList parts = line.split(' ', Qt::SkipEmptyParts);
+        if (parts.isEmpty())
+            return row;
+
+        row.date = parts[0];
+        for (int i = 1; i < parts.size(); ++i) {
+            QStringList cellParts = parts[i].split('#');
+            if (cellParts.size() < 3)
+                continue;
+            bool ok;
+            int num = cellParts[0].toInt(&ok);
+            if (!ok || num < 1 || num > 80)
+                continue;
+
+            slcInfo info;
+            info.prize = static_cast<quint8>(num);
+            info.isSelect = false;   // 初始化
+            info.isDeleted = false;  // 初始化
+            info.isMark2 = false;    // 初始化
+            // 解析颜色 AARRGGBB
+            if (cellParts[1].length() == 8) {
+                info.color.setAlpha(cellParts[1].mid(0,2).toInt(nullptr,16));
+                info.color.setRed(cellParts[1].mid(2,2).toInt(nullptr,16));
+                info.color.setGreen(cellParts[1].mid(4,2).toInt(nullptr,16));
+                info.color.setBlue(cellParts[1].mid(6,2).toInt(nullptr,16));
+            }
+            if (cellParts[2].size() >= 3) {
+                info.isSelect  = cellParts[2][0] == '1';
+                info.isDeleted = cellParts[2][1] == '1';
+                info.isMark2   = cellParts[2][2] == '1';
+            }
+            row.prizes.append(info);
+        }
+        return row;
+    };
+
+    // 读取模式
+    enum ReadMode { ReadHeader, ReadRepeat, ReadNeighbor, ReadMix };
+    ReadMode readMode = ReadHeader;
+    GroupData currentGroup;
+
     while (!in.atEnd()) {
         QString line = in.readLine().trimmed();
         if (line.isEmpty())
             continue;
 
+        // 头部信息
         if (line == "GROUPED") {
             savedGroupedByFreq = true;
             continue;
@@ -1356,52 +1461,77 @@ void SortTableElementsByCountWgt::onLoadData()
             savedGroupedByFreq = false;
             continue;
         }
-
-        if (line == "---") {
-            SparseRow sep;
-            sep.isSeparator = true;
-            m_sparseData.append(sep);
+        if (line.startsWith("MODE:")) {
+            savedMode = line.mid(5).toInt();
             continue;
         }
 
-        SparseRow sr;
-        QStringList parts = line.split(' ', Qt::SkipEmptyParts);
-        if (parts.isEmpty())
+        // 组标记
+        if (line == "GROUP_SEPARATOR") {
+            // 保存当前组并开始新组
+            m_groups.append(currentGroup);
+            currentGroup = GroupData();
+            continue;
+        }
+        if (line == "GROUP_REPEAT_START") {
+            readMode = ReadRepeat;
+            continue;
+        }
+        if (line == "GROUP_REPEAT_END") {
+            readMode = ReadHeader;
+            continue;
+        }
+        if (line == "GROUP_NEIGHBOR_START") {
+            readMode = ReadNeighbor;
+            continue;
+        }
+        if (line == "GROUP_NEIGHBOR_END") {
+            readMode = ReadHeader;
+            continue;
+        }
+        if (line == "GROUP_MIX_START") {
+            readMode = ReadMix;
+            continue;
+        }
+        if (line == "GROUP_MIX_END") {
+            readMode = ReadHeader;
+            continue;
+        }
+
+        // 解析数据行
+        slctTbRow row = parseRow(line);
+        if (row.date.isEmpty() && row.prizes.isEmpty())
             continue;
 
-        sr.date = parts[0];
-        for (int i = 1; i < parts.size(); ++i) {
-            // 格式: num#AARRGGBB#SDM
-            QStringList cellParts = parts[i].split('#');
-            if (cellParts.size() < 3)
-                continue;
-            bool ok;
-            int num = cellParts[0].toInt(&ok);
-            if (!ok || num < 1 || num > 80)
-                continue;
-            sr.prizes[num].prize = static_cast<quint8>(num);
-            // 解析颜色 AARRGGBB
-            QColor c;
-            if (cellParts[1].length() == 8) {
-                c.setAlpha(cellParts[1].mid(0,2).toInt(nullptr,16));
-                c.setRed(cellParts[1].mid(2,2).toInt(nullptr,16));
-                c.setGreen(cellParts[1].mid(4,2).toInt(nullptr,16));
-                c.setBlue(cellParts[1].mid(6,2).toInt(nullptr,16));
-            } else {
-                c = QColor(cellParts[1]);
-            }
-            sr.prizes[num].color = c;
-            if (cellParts[2].size() >= 3) {
-                sr.prizes[num].isSelect  = cellParts[2][0] == '1';
-                sr.prizes[num].isDeleted = cellParts[2][1] == '1';
-                sr.prizes[num].isMark2   = cellParts[2][2] == '1';
-            }
+        switch (readMode) {
+        case ReadRepeat:
+            currentGroup.repeatData.append(row);
+            break;
+        case ReadNeighbor:
+            currentGroup.neighborData.append(row);
+            break;
+        case ReadMix:
+            currentGroup.mixData.append(row);
+            break;
+        default:
+            break;
         }
-        m_sparseData.append(sr);
     }
+
+    // 保存最后一组
+    if (!currentGroup.repeatData.isEmpty() || !currentGroup.neighborData.isEmpty() || !currentGroup.mixData.isEmpty()) {
+        m_groups.append(currentGroup);
+    }
+
     file.close();
 
-    m_groups.clear();
+    // 设置当前模式
+    m_currentMode = savedMode;
+
+    // 重建稀疏数据
+    rebuildSparseData();
+
+    // 恢复分组状态
     m_originalBlockMappings.clear();
     m_blockDividers.clear();
     m_delegate->setBlockColumnMappings(QVector<QVector<int>>());
@@ -1414,6 +1544,61 @@ void SortTableElementsByCountWgt::onLoadData()
         onGroupByFreq();
     else
         m_tableView->refreshModel();
+}
+
+void SortTableElementsByCountWgt::syncSparseDataToGroups()
+{
+    if (m_groups.isEmpty() || m_sparseData.isEmpty())
+        return;
+
+    int groupIndex = 0;
+    int rowIndexInGroup = 0;
+
+    for (const SparseRow &sr : m_sparseData) {
+        if (sr.isSeparator) {
+            // 遇到分隔符，移动到下一组
+            groupIndex++;
+            rowIndexInGroup = 0;
+            continue;
+        }
+
+        if (groupIndex >= m_groups.size())
+            break;
+
+        // 根据当前模式获取对应的数据列表
+        QVector<slctTbRow> *targetList = nullptr;
+        switch (m_currentMode) {
+        case 0: targetList = &m_groups[groupIndex].repeatData; break;
+        case 1: targetList = &m_groups[groupIndex].neighborData; break;
+        case 2: targetList = &m_groups[groupIndex].mixData; break;
+        }
+
+        if (!targetList || rowIndexInGroup >= targetList->size())
+            continue;
+
+        slctTbRow &row = (*targetList)[rowIndexInGroup];
+
+        // 更新日期
+        row.date = sr.date;
+        row.isSelected = sr.isSelected;
+
+        // 更新每个单元格的状态
+        row.prizes.clear();
+        for (int col = 1; col <= 80; ++col) {
+            const slcInfo &srcInfo = sr.prizes[col];
+            if (srcInfo.prize != 0) {
+                slcInfo info;
+                info.prize = srcInfo.prize;
+                info.color = srcInfo.color;
+                info.isSelect = srcInfo.isSelect;
+                info.isDeleted = srcInfo.isDeleted;
+                info.isMark2 = srcInfo.isMark2;
+                row.prizes.append(info);
+            }
+        }
+
+        rowIndexInGroup++;
+    }
 }
 
 void SortTableElementsByCountWgt::onExcludeNumbers()

@@ -122,6 +122,7 @@ private:
     void computeBlockMappingAndDividers(const QVector<const SparseRow *> &rows,
                                         QVector<int> &mapping, QVector<int> &dividers);
     void rebuildSparseData();
+    void syncSparseDataToGroups();
 
     QSet<int> getSelectedNumbersInBlock(const QVector<const SparseRow *> &rows) const;
     void rearrangeSubBlock(QVector<int> &mapping, int start, int end,
