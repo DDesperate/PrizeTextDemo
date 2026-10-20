@@ -1141,8 +1141,9 @@ void SortTableElementsByCountWgt::onRandomMarkNumbers()
         if (sr.isSeparator) continue;
         for (int col = 1; col <= 80; ++col) {
             if (sr.prizes[col].prize != 0 && numbersToMark.contains(sr.prizes[col].prize)) {
+                // 如果已被剔除，跳过不标记
+                if (sr.prizes[col].isDeleted) continue;
                 sr.prizes[col].isSelect = true;
-                sr.prizes[col].isDeleted = false;
                 markedCount++;
             }
         }
@@ -1169,8 +1170,9 @@ void SortTableElementsByCountWgt::markLatestRepeatPrize(const QList<quint8> &lis
         if (sr.isSeparator) continue;
         for (int col = 1; col <= 80; ++col) {
             if (sr.prizes[col].prize != 0 && list.contains(sr.prizes[col].prize)) {
+                // 如果已被剔除，跳过不标记
+                if (sr.prizes[col].isDeleted) continue;
                 sr.prizes[col].isSelect = true;
-                sr.prizes[col].isDeleted = false;
                 markedCount++;
             }
         }
@@ -1204,6 +1206,8 @@ void SortTableElementsByCountWgt::onMarkNumbers()
         if (sr.isSeparator) continue;
         for (int col = 1; col <= 80; ++col) {
             if (sr.prizes[col].prize != 0 && numbers.contains(sr.prizes[col].prize)) {
+                // 如果已被剔除，跳过不标记
+                if (sr.prizes[col].isDeleted) continue;
                 sr.prizes[col].setMark2(true);
                 markedCount++;
             }
@@ -1622,7 +1626,8 @@ void SortTableElementsByCountWgt::onExcludeNumbers()
         for (int col = 1; col <= 80; ++col) {
             if (sr.prizes[col].prize != 0 && numbers.contains(sr.prizes[col].prize)) {
                 sr.prizes[col].isDeleted = true;
-                sr.prizes[col].isSelect = false;
+                sr.prizes[col].isSelect = false;  // 清除绿色标记
+                sr.prizes[col].isMark2 = false;    // 清除黄色标记
                 excludedCount++;
             }
         }
