@@ -113,6 +113,7 @@ private slots:
     void onLoadData();
     void onExcludeNumbers();
     void onUnexcludeNumbers();
+    void onToggleExcludeNumbers();
 
 public:
     void markLatestRepeatPrize(const QList<quint8> &list);
@@ -150,6 +151,7 @@ private:
     QPushButton *btnMark;
     NumLineEdit *numLineEdit_exclude;
     QPushButton *btnExclude;
+    QPushButton *btnToggleExclude;
     QPushButton *btnUnexclude;
 
     // 每次拉取的三种模式数据
