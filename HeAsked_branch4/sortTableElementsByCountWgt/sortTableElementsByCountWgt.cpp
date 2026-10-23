@@ -1679,23 +1679,22 @@ void SortTableElementsByCountWgt::onToggleExcludeNumbers()
     QList<quint8> numbers = numLineEdit_exclude->strToList();
     if (numbers.isEmpty()) {
         QMessageBox::warning(nullptr, QStringLiteral("警告"),
-                             QStringLiteral("请输入要反选剔除的数字"));
+                             QStringLiteral("请输入要保留的数字"));
         return;
     }
 
-    int toggledCount = 0;
+    int excludedCount = 0;
     for (SparseRow &sr : m_sparseData) {
         if (sr.isSeparator) continue;
         for (int col = 1; col <= 80; ++col) {
-            if (sr.prizes[col].prize != 0 && numbers.contains(sr.prizes[col].prize)) {
-                if (sr.prizes[col].isDeleted) {
-                    sr.prizes[col].isDeleted = false;
-                } else {
+            // 非空单元格且不在保留列表中，则标记为剔除
+            if (sr.prizes[col].prize != 0 && !numbers.contains(sr.prizes[col].prize)) {
+                if (!sr.prizes[col].isDeleted) {
                     sr.prizes[col].isDeleted = true;
                     sr.prizes[col].isSelect = false;
                     sr.prizes[col].isMark2 = false;
+                    excludedCount++;
                 }
-                toggledCount++;
             }
         }
     }
@@ -1703,5 +1702,5 @@ void SortTableElementsByCountWgt::onToggleExcludeNumbers()
     m_tableView->refreshModel();
 
     QMessageBox::information(this, QStringLiteral("完成"),
-                             QStringLiteral("已反选剔除 %1 项").arg(toggledCount));
+                             QStringLiteral("已反选剔除 %1 项").arg(excludedCount));
 }
