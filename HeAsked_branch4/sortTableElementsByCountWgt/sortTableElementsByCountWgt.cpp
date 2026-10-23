@@ -681,7 +681,7 @@ void SortTableElementsByCountWgt::setupUI()
     numLineEdit_exclude = new NumLineEdit(this);
     btnExclude = new QPushButton(QStringLiteral("剔除"), this);
     btnExclude->setAutoDefault(false);
-    btnUnexclude = new QPushButton(QStringLiteral("取消剔除"), this);
+    btnUnexclude = new QPushButton(QStringLiteral("全部取消剔除"), this);
     btnUnexclude->setAutoDefault(false);
     QHBoxLayout *excludeLayout = new QHBoxLayout();
     excludeLayout->addWidget(new QLabel(QStringLiteral("剔除项"), this));
@@ -1647,22 +1647,13 @@ void SortTableElementsByCountWgt::onUnexcludeNumbers()
         return;
     }
 
-    QList<quint8> numbers = numLineEdit_exclude->strToList();
-    if (numbers.isEmpty()) {
-        QMessageBox::warning(nullptr, QStringLiteral("警告"),
-                             QStringLiteral("请输入要取消剔除的数字"));
-        return;
-    }
-
     int unexcludedCount = 0;
     for (SparseRow &sr : m_sparseData) {
         if (sr.isSeparator) continue;
         for (int col = 1; col <= 80; ++col) {
-            if (sr.prizes[col].prize != 0 && numbers.contains(sr.prizes[col].prize)) {
-                if (sr.prizes[col].isDeleted) {
-                    sr.prizes[col].isDeleted = false;
-                    unexcludedCount++;
-                }
+            if (sr.prizes[col].isDeleted) {
+                sr.prizes[col].isDeleted = false;
+                unexcludedCount++;
             }
         }
     }
